@@ -11,7 +11,7 @@ import {
 } from "recharts";
 
 export default function TrainingPlan() {
-  // Data dummy sesuai screenshot (Nanti bisa diganti dengan fetch dari Google Sheet)
+  // Data tetap sama sesuai permintaan
   const plannedData = [
     {
       dept: "Operation",
@@ -106,9 +106,8 @@ export default function TrainingPlan() {
     { name: "Planned", value: 90.6 },
     { name: "Ad Hoc", value: 9.4 },
   ];
-  const COLORS = ["#3b82f6", "#8b5cf6"]; // Biru untuk Planned, Ungu untuk Ad Hoc
+  const COLORS = ["#3b82f6", "#8b5cf6"];
 
-  // Custom label untuk menampilkan persentase di dalam Donut Chart
   const renderCustomizedLabel = ({
     cx,
     cy,
@@ -129,7 +128,7 @@ export default function TrainingPlan() {
         fill="white"
         textAnchor="middle"
         dominantBaseline="central"
-        fontSize="14"
+        fontSize="12"
         fontWeight="bold"
       >
         {`${(percent * 100).toFixed(1)}%`}
@@ -138,42 +137,44 @@ export default function TrainingPlan() {
   };
 
   return (
-    <div className="h-full w-full flex flex-col lg:flex-row gap-4 p-4 overflow-hidden font-sans">
+    // overflow-y-auto di mobile agar bisa discroll, lg:overflow-hidden di desktop biar tetap fit ke layar
+    <div className="h-full w-full flex flex-col lg:flex-row gap-4 p-3 md:p-4 overflow-y-auto lg:overflow-hidden font-sans custom-scrollbar bg-[#f8fafc]">
       {/* ================= KIRI: TABEL ================= */}
-      <div className="flex-1 flex flex-col gap-4 min-w-0">
+      <div className="flex-[1.5] flex flex-col gap-4 min-w-0">
         {/* TABEL PLANNED TRAINING */}
-        <div className="flex-1 bg-white rounded-2xl border border-slate-300 shadow-md p-4 flex flex-col min-h-0 overflow-hidden">
+        <div className="h-[350px] lg:flex-1 bg-white rounded-2xl border border-slate-300 shadow-md p-3 md:p-4 flex flex-col min-h-0 overflow-hidden">
           <div className="flex items-center gap-2 mb-3 shrink-0">
-            <h2 className="font-bold text-slate-800 tracking-wide">
+            <h2 className="font-bold text-slate-800 text-xs md:text-sm tracking-wide uppercase italic">
               PLANNED TRAINING
             </h2>
             <div className="flex gap-1">
-              <div className="w-2.5 h-2.5 rounded-full bg-blue-500"></div>
-              <div className="w-2.5 h-2.5 rounded-full bg-green-500"></div>
-              <div className="w-2.5 h-2.5 rounded-full bg-red-500"></div>
+              <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+              <div className="w-2 h-2 rounded-full bg-green-500"></div>
+              <div className="w-2 h-2 rounded-full bg-red-500"></div>
             </div>
           </div>
 
-          <div className="flex-1 overflow-x-auto overflow-y-auto border border-slate-200 rounded-lg">
-            <table className="w-full min-w-[520px] text-sm text-left">
+          <div className="flex-1 overflow-auto border border-slate-100 rounded-lg">
+            <table className="w-full min-w-[450px] text-[10px] md:text-xs text-left">
               <thead className="bg-[#2563eb] text-white sticky top-0 z-10">
                 <tr>
                   <th className="p-2 font-semibold">Dept</th>
                   <th className="p-2 font-semibold">Training Title</th>
-                  <th className="p-2 font-semibold">Type of Training</th>
-                  <th className="p-2 font-semibold">Status Label</th>
+                  <th className="p-2 font-semibold">Type</th>
+                  <th className="p-2 font-semibold">Status</th>
                 </tr>
               </thead>
-              <tbody className="text-slate-700">
+              <tbody className="text-slate-700 divide-y divide-slate-50">
                 {plannedData.map((row, i) => (
-                  <tr
-                    key={i}
-                    className="border-b border-slate-100 hover:bg-slate-50"
-                  >
-                    <td className="p-2 whitespace-nowrap">{row.dept}</td>
-                    <td className="p-2 truncate max-w-[200px]">{row.title}</td>
+                  <tr key={i} className="hover:bg-slate-50 transition">
+                    <td className="p-2 font-medium">{row.dept}</td>
+                    <td className="p-2 truncate max-w-[150px] md:max-w-[250px]">
+                      {row.title}
+                    </td>
                     <td className="p-2">{row.type}</td>
-                    <td className="p-2">{row.status}</td>
+                    <td className="p-2 text-slate-400 font-bold">
+                      {row.status}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -182,20 +183,20 @@ export default function TrainingPlan() {
         </div>
 
         {/* TABEL AD HOC TRAINING */}
-        <div className="flex-1 bg-white rounded-2xl border border-slate-300 shadow-md p-4 flex flex-col min-h-0 overflow-hidden">
+        <div className="h-[350px] lg:flex-1 bg-white rounded-2xl border border-slate-300 shadow-md p-3 md:p-4 flex flex-col min-h-0 overflow-hidden">
           <div className="flex items-center gap-2 mb-3 shrink-0">
-            <h2 className="font-bold text-slate-800 tracking-wide">
+            <h2 className="font-bold text-slate-800 text-xs md:text-sm tracking-wide uppercase italic">
               AD HOC TRAINING
             </h2>
             <div className="flex gap-1">
-              <div className="w-2.5 h-2.5 rounded-full bg-blue-500"></div>
-              <div className="w-2.5 h-2.5 rounded-full bg-green-500"></div>
-              <div className="w-2.5 h-2.5 rounded-full bg-red-500"></div>
+              <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+              <div className="w-2 h-2 rounded-full bg-green-500"></div>
+              <div className="w-2 h-2 rounded-full bg-red-500"></div>
             </div>
           </div>
 
-          <div className="flex-1 overflow-x-auto overflow-y-auto border border-slate-200 rounded-lg">
-            <table className="w-full min-w-[520px] text-sm text-left">
+          <div className="flex-1 overflow-auto border border-slate-100 rounded-lg">
+            <table className="w-full min-w-[450px] text-[10px] md:text-xs text-left">
               <thead className="bg-[#8b5cf6] text-white sticky top-0 z-10">
                 <tr>
                   <th className="p-2 font-semibold">Dept</th>
@@ -203,15 +204,16 @@ export default function TrainingPlan() {
                   <th className="p-2 font-semibold">Status Label</th>
                 </tr>
               </thead>
-              <tbody className="text-slate-700">
+              <tbody className="text-slate-700 divide-y divide-slate-50">
                 {adHocData.map((row, i) => (
-                  <tr
-                    key={i}
-                    className="border-b border-slate-100 hover:bg-slate-50"
-                  >
-                    <td className="p-2 whitespace-nowrap">{row.dept}</td>
-                    <td className="p-2 truncate max-w-[300px]">{row.title}</td>
-                    <td className="p-2">{row.status}</td>
+                  <tr key={i} className="hover:bg-slate-50 transition">
+                    <td className="p-2 font-medium">{row.dept}</td>
+                    <td className="p-2 truncate max-w-[200px] md:max-w-[300px]">
+                      {row.title}
+                    </td>
+                    <td className="p-2 text-purple-600 font-bold uppercase text-[9px]">
+                      {row.status}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -221,27 +223,27 @@ export default function TrainingPlan() {
       </div>
 
       {/* ================= KANAN: FILTERS & CHART ================= */}
-      <div className="w-full lg:w-[35%] flex flex-col gap-4 min-w-0 shrink-0">
-        {/* FILTERS */}
+      <div className="w-full lg:w-[35%] flex flex-col gap-4 shrink-0 lg:min-h-0">
+        {/* FILTERS - Tetap sebaris tapi text menyesuaikan */}
         <div className="flex gap-2 shrink-0">
-          <div className="bg-[#0ea5e9] hover:bg-[#0284c7] transition text-white flex-1 rounded-xl flex items-center justify-between p-3 font-bold text-sm cursor-pointer shadow-md">
+          <div className="bg-[#0ea5e9] text-white flex-1 rounded-xl flex items-center justify-between p-2.5 md:p-3 font-bold text-[10px] md:text-xs cursor-pointer shadow-md active:scale-95 transition">
             <span>DEPARTEMENT</span> <span>▼</span>
           </div>
-          <div className="bg-[#84cc16] hover:bg-[#65a30d] transition text-white flex-1 rounded-xl flex items-center justify-between p-3 font-bold text-sm cursor-pointer shadow-md">
+          <div className="bg-[#84cc16] text-white flex-1 rounded-xl flex items-center justify-between p-2.5 md:p-3 font-bold text-[10px] md:text-xs cursor-pointer shadow-md active:scale-95 transition">
             <span>TRAINING TYPE</span> <span>▼</span>
           </div>
         </div>
 
-        {/* DONUT CHART */}
-        <div className="flex-1 bg-white rounded-2xl border border-slate-300 shadow-md p-4 flex flex-col min-h-0 overflow-hidden">
+        {/* DONUT CHART - Pakai min-height agar tidak hilang di mobile */}
+        <div className="min-h-[400px] lg:flex-1 bg-white rounded-2xl border border-slate-300 shadow-md p-4 flex flex-col overflow-hidden">
           <div className="flex items-center gap-2 mb-2 shrink-0">
-            <h2 className="font-bold text-slate-800 tracking-wide">
-              PLANNED VS AD HOC TRAINING
+            <h2 className="font-black text-slate-800 text-xs md:text-sm tracking-wide uppercase italic">
+              PLANNED VS AD HOC
             </h2>
             <div className="flex gap-1">
-              <div className="w-2.5 h-2.5 rounded-full bg-blue-500"></div>
-              <div className="w-2.5 h-2.5 rounded-full bg-green-500"></div>
-              <div className="w-2.5 h-2.5 rounded-full bg-red-500"></div>
+              <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+              <div className="w-2 h-2 rounded-full bg-green-500"></div>
+              <div className="w-2 h-2 rounded-full bg-red-500"></div>
             </div>
           </div>
 
@@ -252,11 +254,11 @@ export default function TrainingPlan() {
                   data={chartData}
                   cx="50%"
                   cy="50%"
-                  innerRadius="50%"
-                  outerRadius="80%"
+                  innerRadius="55%"
+                  outerRadius="85%"
                   dataKey="value"
-                  stroke="white"
-                  strokeWidth={3}
+                  stroke="#fff"
+                  strokeWidth={2}
                   labelLine={false}
                   label={renderCustomizedLabel}
                 >
@@ -268,12 +270,40 @@ export default function TrainingPlan() {
                   ))}
                 </Pie>
                 <Tooltip />
-                <Legend verticalAlign="bottom" height={36} iconType="circle" />
+                <Legend
+                  verticalAlign="bottom"
+                  height={36}
+                  iconType="circle"
+                  wrapperStyle={{ fontSize: "12px" }}
+                />
               </PieChart>
             </ResponsiveContainer>
+
+            {/* Center Text Persentase (Planned) */}
+            <div className="absolute top-[45%] left-1/2 -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none">
+              <span className="block text-3xl font-black text-slate-800">
+                90.6%
+              </span>
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">
+                Planned
+              </span>
+            </div>
           </div>
         </div>
+
+        {/* Spacer bawah untuk mobile agar tidak mepet snap-y */}
+        <div className="h-10 lg:hidden shrink-0"></div>
       </div>
+
+      <style jsx>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: #cbd5e1;
+          border-radius: 10px;
+        }
+      `}</style>
     </div>
   );
 }

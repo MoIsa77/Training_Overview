@@ -39,11 +39,9 @@ function isDateInRange(date, start, end) {
   const d = new Date(date);
   const s = new Date(start);
   const e = new Date(end);
-
   d.setHours(0, 0, 0, 0);
   s.setHours(0, 0, 0, 0);
   e.setHours(0, 0, 0, 0);
-
   return d >= s && d <= e;
 }
 
@@ -54,7 +52,6 @@ function isSameDate(d1, d2) {
 
 export default function TrainingCalendar() {
   const [trainings, setTrainings] = useState([]);
-
   const [rangeStart, setRangeStart] = useState(null);
   const [rangeEnd, setRangeEnd] = useState(null);
 
@@ -69,27 +66,17 @@ export default function TrainingCalendar() {
   });
 
   const handleChange = (e) => {
-    setForm({
-      ...form,
-      [e.target.name]: e.target.value,
-    });
+    setForm({ ...form, [e.target.name]: e.target.value });
   };
 
   function handleDateClick(date) {
     if (!rangeStart || (rangeStart && rangeEnd)) {
       setRangeStart(date);
       setRangeEnd(null);
-
-      setForm({
-        ...form,
-        startDate: date,
-        endDate: date,
-        dateRange: date,
-      });
+      setForm({ ...form, startDate: date, endDate: date, dateRange: date });
     } else {
       if (new Date(date) < new Date(rangeStart)) {
         setRangeStart(date);
-
         setForm({
           ...form,
           startDate: date,
@@ -98,7 +85,6 @@ export default function TrainingCalendar() {
         });
       } else {
         setRangeEnd(date);
-
         setForm({
           ...form,
           startDate: rangeStart,
@@ -111,9 +97,7 @@ export default function TrainingCalendar() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-
     setTrainings([...trainings, form]);
-
     setForm({
       title: "",
       dateRange: "",
@@ -123,7 +107,6 @@ export default function TrainingCalendar() {
       participants: "",
       status: "plan",
     });
-
     setRangeStart(null);
     setRangeEnd(null);
   };
@@ -131,38 +114,30 @@ export default function TrainingCalendar() {
   const renderDays = (year, monthIndex) => {
     const firstDay = new Date(year, monthIndex, 1).getDay();
     const totalDays = new Date(year, monthIndex + 1, 0).getDate();
-
     const cells = [];
 
-    // Kotak kosong sebelum tanggal 1
     for (let i = 0; i < firstDay; i++) {
       cells.push(<div key={`empty-${monthIndex}-${i}`}></div>);
     }
 
-    // Tanggal aktual
     for (let d = 1; d <= totalDays; d++) {
       const dateKey = `${year}-${String(monthIndex + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
-
       const training = trainings.find((t) =>
         isDateInRange(dateKey, t.startDate, t.endDate),
       );
-
       let style =
-        "cursor-pointer text-[10px] text-center py-0.5 transition hover:bg-gray-100 flex items-center justify-center";
+        "cursor-pointer text-[10px] text-center py-1 transition hover:bg-gray-100 flex items-center justify-center";
 
       if (training) {
         const isStart = isSameDate(dateKey, training.startDate);
         const isEnd = isSameDate(dateKey, training.endDate);
-
-        if (isStart && isEnd) {
+        if (isStart && isEnd)
           style += ` ${getStatusColor(training.status)} rounded font-bold`;
-        } else if (isStart) {
+        else if (isStart)
           style += ` ${getStatusColor(training.status)} rounded-l font-bold`;
-        } else if (isEnd) {
+        else if (isEnd)
           style += ` ${getStatusColor(training.status)} rounded-r font-bold`;
-        } else {
-          style += ` ${getStatusColor(training.status)} rounded-none`;
-        }
+        else style += ` ${getStatusColor(training.status)} rounded-none`;
       }
 
       if (rangeStart && !rangeEnd && isSameDate(dateKey, rangeStart)) {
@@ -179,52 +154,44 @@ export default function TrainingCalendar() {
         </div>,
       );
     }
-
     return cells;
   };
 
   return (
-    // 🔥 PERBAIKAN: Menggunakan h-full flex flex-col overflow-hidden agar tidak tumpah/scroll di luar
-    <div className="h-full w-full flex flex-col gap-2 p-2 md:p-3 overflow-hidden font-sans bg-transparent">
-      {/* ================= CALENDAR GRID (ATAS) ================= */}
-      {/* 🔥 shrink-0 memastikan kalender tidak penyok, grid-cols-6 memaksanya jadi 2 baris saja */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 shrink-0">
+    <div className="h-full w-full flex flex-col gap-4 p-3 md:p-4 overflow-y-auto lg:overflow-hidden bg-[#f8fafc] custom-scrollbar">
+      {/* GRID KALENDER (ATAS) */}
+      {/* Di Desktop kita kasih max-height agar tidak menekan form di bawahnya */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 shrink-0 lg:max-h-[45%] overflow-y-auto pr-1 custom-scrollbar">
         {months.map((month, i) => (
           <div
             key={month}
-            className="bg-white rounded-lg border border-slate-200 shadow-sm p-1.5 flex flex-col"
+            className="bg-white rounded-lg border border-slate-200 shadow-sm p-2 flex flex-col h-[155px]"
           >
-            <h3 className="text-[11px] font-bold text-slate-800 mb-1 border-b border-slate-100 pb-0.5">
+            <h3 className="text-[11px] font-bold text-slate-800 mb-1 border-b border-slate-100 pb-1 uppercase italic">
               {month} 2026
             </h3>
-
-            {/* Header Hari */}
-            <div className="grid grid-cols-7 text-[8px] font-bold text-slate-400 mb-0.5">
+            <div className="grid grid-cols-7 text-[8px] font-bold text-slate-400 mb-1">
               {days.map((d) => (
                 <div key={d} className="text-center">
                   {d}
                 </div>
               ))}
             </div>
-
-            {/* Grid Tanggal */}
             <div className="grid grid-cols-7 flex-1">{renderDays(2026, i)}</div>
           </div>
         ))}
       </div>
 
-      {/* ================= FORM & TABLE (BAWAH) ================= */}
-      {/* 🔥 flex-1 min-h-0 agar mengisi sisa ruang layar dan tidak membesar */}
-      <div className="flex-1 min-h-0 flex flex-col lg:flex-row gap-3">
+      {/* SECTION FORM & TABEL (BAWAH) */}
+      <div className="flex-1 flex flex-col lg:flex-row gap-4 min-h-0 lg:overflow-hidden">
         {/* INPUT FORM (KIRI) */}
-        <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-sm w-full lg:w-[25%] flex flex-col shrink-0 overflow-y-auto">
-          <h2 className="text-xs font-bold text-slate-800 mb-3 border-b border-slate-100 pb-1.5">
+        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm w-full lg:w-[28%] flex flex-col shrink-0 lg:overflow-y-auto custom-scrollbar">
+          <h2 className="text-xs font-bold text-slate-800 mb-3 border-b border-slate-100 pb-2 uppercase italic shrink-0">
             Input Training
           </h2>
-
           <form
             onSubmit={handleSubmit}
-            className="flex flex-col gap-2.5 text-[11px]"
+            className="flex flex-col gap-3 text-[11px]"
           >
             <div>
               <label className="text-[9px] font-semibold text-slate-500 uppercase">
@@ -234,11 +201,10 @@ export default function TrainingCalendar() {
                 name="title"
                 value={form.title}
                 onChange={handleChange}
-                className="w-full border border-slate-300 rounded p-1.5 outline-none focus:ring-1 focus:ring-blue-500 mt-0.5"
+                className="w-full border border-slate-300 rounded p-2 outline-none focus:ring-1 focus:ring-blue-500 mt-1"
                 required
               />
             </div>
-
             <div>
               <label className="text-[9px] font-semibold text-slate-500 uppercase">
                 Date Range
@@ -248,11 +214,10 @@ export default function TrainingCalendar() {
                 placeholder="Click calendar to select"
                 value={form.dateRange}
                 readOnly
-                className="w-full border border-slate-300 rounded p-1.5 bg-slate-50 text-slate-500 cursor-not-allowed mt-0.5"
+                className="w-full border border-slate-300 rounded p-2 bg-slate-50 text-slate-500 italic mt-1"
                 required
               />
             </div>
-
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <label className="text-[9px] font-semibold text-slate-500 uppercase">
@@ -262,24 +227,23 @@ export default function TrainingCalendar() {
                   name="type"
                   value={form.type}
                   onChange={handleChange}
-                  className="w-full border border-slate-300 rounded p-1.5 outline-none focus:ring-1 focus:ring-blue-500 mt-0.5"
+                  className="w-full border border-slate-300 rounded p-2 outline-none focus:ring-1 focus:ring-blue-500 mt-1"
                   required
                 />
               </div>
               <div>
                 <label className="text-[9px] font-semibold text-slate-500 uppercase">
-                  Qty / Pax
+                  Pax
                 </label>
                 <input
                   name="participants"
                   value={form.participants}
                   onChange={handleChange}
-                  className="w-full border border-slate-300 rounded p-1.5 outline-none focus:ring-1 focus:ring-blue-500 mt-0.5"
+                  className="w-full border border-slate-300 rounded p-2 outline-none focus:ring-1 focus:ring-blue-500 mt-1"
                   required
                 />
               </div>
             </div>
-
             <div>
               <label className="text-[9px] font-semibold text-slate-500 uppercase">
                 Status
@@ -288,7 +252,7 @@ export default function TrainingCalendar() {
                 name="status"
                 value={form.status}
                 onChange={handleChange}
-                className="w-full border border-slate-300 rounded p-1.5 outline-none focus:ring-1 focus:ring-blue-500 font-medium mt-0.5"
+                className="w-full border border-slate-300 rounded p-2 outline-none focus:ring-1 focus:ring-blue-500 mt-1"
               >
                 <option value="plan">Plan</option>
                 <option value="actual">Actual</option>
@@ -296,33 +260,30 @@ export default function TrainingCalendar() {
                 <option value="cancelled">Cancelled</option>
               </select>
             </div>
-
             <button
               type="submit"
-              className="mt-1 bg-[#2563eb] text-white font-bold rounded p-2 hover:bg-blue-700 transition active:scale-[0.98]"
+              className="mt-2 bg-[#2563eb] text-white font-bold rounded-lg py-2.5 hover:bg-blue-700 transition active:scale-95 uppercase text-[10px] shrink-0"
             >
               Add to Calendar
             </button>
           </form>
         </div>
 
-        {/* TRAINING LIST DETAILS (KANAN) */}
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-3 flex-1 flex flex-col min-w-0">
-          <h2 className="text-xs font-bold text-slate-800 mb-2 border-b border-slate-100 pb-1.5">
+        {/* TRAINING LIST TABLE (KANAN) */}
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 flex-1 flex flex-col min-h-[300px] lg:min-h-0">
+          <h2 className="text-xs font-bold text-slate-800 mb-3 border-b border-slate-100 pb-2 uppercase italic shrink-0">
             Training List
           </h2>
-
-          {/* 🔥 Container ini yang akan ber-scroll jika tabelnya panjang */}
-          <div className="flex-1 overflow-x-auto overflow-y-auto border border-slate-200 rounded-lg">
-            <table className="w-full min-w-[560px] text-[11px] text-left">
-              <thead className="bg-[#dc2626] text-white sticky top-0 z-10 shadow-sm">
+          <div className="flex-1 overflow-auto border border-slate-100 rounded-lg bg-slate-50/50 custom-scrollbar">
+            <table className="w-full min-w-[500px] text-[10px] md:text-[11px] text-left">
+              <thead className="bg-[#dc2626] text-white sticky top-0 z-10 uppercase italic">
                 <tr>
-                  <th className="p-2 font-semibold">Training Title</th>
-                  <th className="p-2 font-semibold">Start</th>
-                  <th className="p-2 font-semibold">End</th>
-                  <th className="p-2 font-semibold">Type</th>
-                  <th className="p-2 font-semibold">Pax</th>
-                  <th className="p-2 font-semibold">Status</th>
+                  <th className="p-2.5">Title</th>
+                  <th className="p-2.5 text-center">Start</th>
+                  <th className="p-2.5 text-center">End</th>
+                  <th className="p-2.5 text-center">Type</th>
+                  <th className="p-2.5 text-center">Pax</th>
+                  <th className="p-2.5 text-center">Status</th>
                 </tr>
               </thead>
               <tbody className="text-slate-700">
@@ -330,28 +291,33 @@ export default function TrainingCalendar() {
                   <tr>
                     <td
                       colSpan="6"
-                      className="p-6 text-center text-slate-400 italic"
+                      className="p-10 text-center text-slate-400 italic"
                     >
-                      No trainings added yet. Select dates on the calendar
-                      above.
+                      No trainings added yet.
                     </td>
                   </tr>
                 ) : (
                   trainings.map((t, index) => (
                     <tr
                       key={index}
-                      className="border-b border-slate-100 hover:bg-slate-50 transition"
+                      className="border-b border-slate-100 bg-white hover:bg-slate-50 transition"
                     >
-                      <td className="p-2 font-medium text-slate-900 truncate max-w-[150px]">
+                      <td className="p-2.5 font-bold text-slate-900 truncate max-w-[150px]">
                         {t.title}
                       </td>
-                      <td className="p-2">{t.startDate}</td>
-                      <td className="p-2">{t.endDate}</td>
-                      <td className="p-2">{t.type}</td>
-                      <td className="p-2">{t.participants}</td>
-                      <td className="p-2">
+                      <td className="p-2.5 text-center text-slate-500">
+                        {t.startDate}
+                      </td>
+                      <td className="p-2.5 text-center text-slate-500">
+                        {t.endDate}
+                      </td>
+                      <td className="p-2.5 text-center">{t.type}</td>
+                      <td className="p-2.5 text-center font-bold text-blue-600">
+                        {t.participants}
+                      </td>
+                      <td className="p-2.5 text-center">
                         <span
-                          className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase ${getStatusColor(t.status)}`}
+                          className={`px-2 py-0.5 rounded text-[8px] font-bold uppercase ${getStatusColor(t.status)}`}
                         >
                           {t.status}
                         </span>
@@ -364,6 +330,9 @@ export default function TrainingCalendar() {
           </div>
         </div>
       </div>
+
+      {/* Spacer bawah untuk mobile */}
+      <div className="h-10 lg:hidden shrink-0"></div>
     </div>
   );
 }
