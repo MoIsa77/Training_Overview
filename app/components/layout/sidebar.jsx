@@ -1,132 +1,127 @@
 "use client";
 
-import Image from "next/image";
-import { LayoutDashboard, Box, Users, X, Home } from "lucide-react";
+import React from "react";
+import {
+  HomeIcon,
+  LayoutDashboardIcon,
+  ClipboardListIcon,
+  CalendarIcon,
+  XIcon,
+} from "lucide-react";
 
 export default function Sidebar({
-  activePage,
-  setActivePage,
   mobileOpen,
   setMobileOpen,
+  activePage,
+  setActivePage,
 }) {
-  // 🔥 SCROLL FUNCTION (SUPER STABLE)
-  const scrollToSection = (id, page) => {
-    const target = document.getElementById(id);
+  const menuItems = [
+    { id: "home", label: "Home", icon: <HomeIcon size={20} /> },
+    {
+      id: "mandays",
+      label: "Mandays Training",
+      icon: <LayoutDashboardIcon size={20} />,
+    },
+    {
+      id: "training-plan",
+      label: "Training Plan",
+      icon: <ClipboardListIcon size={20} />,
+    },
+    {
+      id: "training-calendar",
+      label: "Training Calendar",
+      icon: <CalendarIcon size={20} />,
+    },
+  ];
 
-    if (!target) {
-      console.warn("Section tidak ditemukan:", id);
-      return;
-    }
-
-    // 🔥 SCROLL KE SECTION (AMAN)
-    target.scrollIntoView({
-      behavior: "smooth",
-      block: "start",
-    });
-
-    setActivePage(page);
+  const handleNav = (id) => {
+    setActivePage(id);
     setMobileOpen(false);
-  };
 
-  // 🔥 MENU STYLE
-  const menuClass = (page) => {
-    const base =
-      "w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200";
-
-    if (activePage === page) {
-      switch (page) {
-        case "home":
-          return `${base} bg-slate-200 text-slate-800 font-semibold`;
-
-        case "mandays":
-          return `${base} bg-blue-100 text-blue-700 font-semibold`;
-
-        case "trainingplan":
-          return `${base} bg-[#8CBD2D]/20 text-[#8CBD2D] font-semibold`;
-
-        case "trainingcalendar":
-          return `${base} bg-red-100 text-red-700 font-semibold`;
-
-        default:
-          return `${base} bg-gray-200`;
-      }
+    // Scroll ke section
+    const el = document.getElementById(id);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth" });
     }
-
-    return `${base} text-slate-600 hover:bg-slate-100 hover:scale-[1.02]`;
   };
 
   return (
     <>
-      {/* OVERLAY */}
+      {/* OVERLAY: Harus di atas Header (Header biasanya z-9999, jadi kita pakai z-[10000]) */}
+      {mobileOpen && (
+        <div
+          className="fixed inset-0 bg-black/60 z-[10000] backdrop-blur-sm transition-opacity duration-300"
+          onClick={() => setMobileOpen(false)}
+        />
+      )}
+
+      {/* SIDEBAR CONTAINER: z-[10001] agar di atas overlay dan header */}
       <div
-        className={`fixed inset-0 bg-black/40 z-40 transition-all duration-300 ${
-          mobileOpen ? "opacity-100 visible" : "opacity-0 invisible"
+        className={`fixed top-0 right-0 h-full w-72 bg-white z-[10001] shadow-2xl transform transition-transform duration-300 ease-out flex flex-col ${
+          mobileOpen ? "translate-x-0" : "translate-x-full"
         }`}
-        onClick={() => setMobileOpen(false)}
-      />
-
-      {/* SIDEBAR */}
-      <aside
-        className={`fixed top-0 right-0 z-50 h-screen w-[90vw] max-w-[320px]
-        bg-white shadow-2xl
-        transform transition-transform duration-500 ease-in-out
-        ${mobileOpen ? "translate-x-0" : "translate-x-full"}`}
       >
-        {/* HEADER */}
-        <div className="flex items-center justify-between px-6 py-5 border-b">
-          <Image
-            src="/filtrona-logo-colorg.png"
-            alt="Filtrona"
-            width={120}
-            height={60}
-            priority
-          />
-
+        {/* HEADER SIDEBAR (LOGO & CLOSE BUTTON) */}
+        <div className="flex items-center justify-between p-5 border-b border-slate-100 shrink-0 bg-white">
+          <div className="flex flex-col gap-1">
+            {/* 🔥 LOGO FILTRONA */}
+            <img
+              src="/filtrona-logo-colorg.png"
+              alt="Filtrona"
+              className="h-7 object-contain w-auto mb-1"
+              onError={(e) => {
+                e.target.src =
+                  "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR_p_G5_JpQ2ZfE9J9m9P9P9P9P9P9P9P9P9A&s";
+              }} // Fallback jika logo tidak ketemu
+            />
+          </div>
           <button
             onClick={() => setMobileOpen(false)}
-            className="p-2 hover:bg-slate-100 rounded-lg transition"
+            className="p-2 hover:bg-slate-100 text-slate-400 hover:text-slate-600 rounded-xl transition-all"
           >
-            <X size={22} className="text-black" />
+            <XIcon size={24} />
           </button>
         </div>
 
-        {/* MENU */}
-        <nav className="flex flex-col px-4 py-6 gap-2">
-          <button
-            onClick={() => scrollToSection("home", "home")}
-            className={menuClass("home")}
-          >
-            <Home size={18} />
-            <span>Home</span>
-          </button>
-
-          <button
-            onClick={() => scrollToSection("mandays", "mandays")}
-            className={menuClass("mandays")}
-          >
-            <LayoutDashboard size={18} />
-            <span>Mandays Training</span>
-          </button>
-
-          <button
-            onClick={() => scrollToSection("training-plan", "trainingplan")}
-            className={menuClass("trainingplan")}
-          >
-            <Box size={18} />
-            <span>Training Plan</span>
-          </button>
-
-          <button
-            onClick={() =>
-              scrollToSection("training-calendar", "trainingcalendar")
-            }
-            className={menuClass("trainingcalendar")}
-          >
-            <Users size={18} />
-            <span>Training Calendar</span>
-          </button>
+        {/* MENU LIST */}
+        <nav className="flex-1 overflow-y-auto p-4 space-y-2">
+          {menuItems.map((item) => {
+            const isActive = activePage === item.id;
+            return (
+              <button
+                key={item.id}
+                onClick={() => handleNav(item.id)}
+                className={`w-full flex items-center gap-4 px-4 py-4 rounded-2xl transition-all duration-200 group ${
+                  isActive
+                    ? "bg-blue-600 text-white shadow-lg shadow-blue-200"
+                    : "text-slate-500 hover:bg-blue-50 hover:text-blue-600"
+                }`}
+              >
+                <div
+                  className={`transition-transform duration-200 ${isActive ? "scale-110" : "group-hover:scale-110"}`}
+                >
+                  {item.icon}
+                </div>
+                <span
+                  className={`text-sm font-bold ${isActive ? "opacity-100" : "opacity-90"}`}
+                >
+                  {item.label}
+                </span>
+                {isActive && (
+                  <div className="ml-auto w-1.5 h-1.5 bg-white rounded-full" />
+                )}
+              </button>
+            );
+          })}
         </nav>
-      </aside>
+
+        {/* FOOTER */}
+        <div className="p-6 border-t border-slate-50 bg-slate-50 shrink-0">
+          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[3px] text-center">
+            FILTRONA © 2026
+          </p>
+        </div>
+      </div>
     </>
   );
 }
