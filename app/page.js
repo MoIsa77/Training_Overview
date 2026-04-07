@@ -77,7 +77,7 @@ const FilterDropdown = ({
     }
     onChange(newSelected);
 
-    // 🔥 AUTO-CLOSE: Langsung tutup otomatis setelah milih opsi
+    // 🔥 AUTO-CLOSE: Langsung tutup otomatis setelah milih opsi (delay 150ms agar smooth)
     setTimeout(() => {
       setIsOpen(false);
     }, 150);
@@ -89,13 +89,13 @@ const FilterDropdown = ({
     } else {
       onChange(options);
     }
-    // Note: Untuk Select All kita tidak tutup otomatis agar user bisa melihat semua tercentang
   };
 
   return (
+    // 🔥 FIX: Z-index sangat tinggi (99999) saat dibuka agar menembus chart
     <div
       ref={dropdownRef}
-      className={`relative flex-none w-[140px] lg:flex-1 lg:w-auto ${isOpen ? "z-[9999]" : "z-10"}`}
+      className={`relative flex-none w-[140px] lg:flex-1 lg:w-auto ${isOpen ? "z-[99999]" : "z-10"}`}
     >
       {/* Tombol Utama */}
       <div
@@ -114,12 +114,12 @@ const FilterDropdown = ({
         <>
           {/* Backdrop Gelap Khusus HP */}
           <div
-            className="fixed inset-0 bg-black/50 backdrop-blur-[2px] z-[9998] md:hidden"
+            className="fixed inset-0 bg-black/50 backdrop-blur-[2px] z-[99998] md:hidden"
             onClick={() => setIsOpen(false)}
           ></div>
 
-          {/* Menu Dropdown */}
-          <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[85vw] max-w-[300px] max-h-[65vh] bg-white rounded-2xl shadow-2xl z-[9999] flex flex-col overflow-hidden md:absolute md:top-full md:left-0 md:mt-2 md:w-60 md:max-h-72 md:translate-x-0 md:translate-y-0 md:rounded-xl border border-slate-100">
+          {/* Menu Dropdown - Menggunakan fixed di HP agar tidak terpotong container */}
+          <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[85vw] max-w-[300px] max-h-[65vh] bg-white rounded-2xl shadow-2xl z-[99999] flex flex-col overflow-hidden md:absolute md:top-full md:left-0 md:mt-2 md:w-60 md:max-h-72 md:translate-x-0 md:translate-y-0 md:rounded-xl border border-slate-100">
             {/* Header Menu / Select All */}
             <div
               className={`p-3 md:p-3 ${menuColorClass} text-white cursor-pointer flex items-center justify-between text-[11px] md:text-xs font-bold sticky top-0 shrink-0 shadow-sm`}
@@ -131,11 +131,10 @@ const FilterDropdown = ({
                 >
                   {selected.length === options.length && options.length > 0 && (
                     <svg
-                      className="w-3 h-3"
+                      className="w-3 h-3 text-black"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
-                      style={{ color: "inherit", filter: "brightness(0.5)" }}
                     >
                       <path
                         strokeLinecap="round"
@@ -159,7 +158,7 @@ const FilterDropdown = ({
               </button>
             </div>
 
-            {/* List Item dengan Hover Effect & Checkbox Premium */}
+            {/* List Item dengan Hover Effect & Custom Checkbox */}
             <div className="overflow-y-auto flex-1 py-1 custom-scrollbar bg-white">
               {options.map((opt) => {
                 const isSelected = selected.includes(opt);
@@ -170,7 +169,7 @@ const FilterDropdown = ({
                     onClick={() => handleToggle(opt)}
                   >
                     <div
-                      className={`w-4 h-4 rounded-md border-2 transition-all flex items-center justify-center ${isSelected ? "bg-blue-600 border-blue-600 shadow-sm" : "border-slate-300 bg-white group-hover:border-blue-400"}`}
+                      className={`w-4 h-4 rounded-md border-2 transition-all flex items-center justify-center ${isSelected ? "bg-blue-600 border-blue-600 shadow-sm" : "border-slate-300 bg-white"}`}
                     >
                       {isSelected && (
                         <svg
@@ -198,7 +197,6 @@ const FilterDropdown = ({
               })}
             </div>
 
-            {/* Tombol Bawah HP */}
             <div
               className="p-3 bg-slate-50 border-t border-slate-100 text-center text-xs font-bold text-blue-600 md:hidden active:bg-slate-100 cursor-pointer"
               onClick={() => setIsOpen(false)}
@@ -362,7 +360,7 @@ export default function Home() {
       >
         <div className="absolute inset-0 bg-black/40 pointer-events-none" />
         <div className="relative z-40 text-center max-w-2xl px-6 text-white pointer-events-auto">
-          <h1 className="text-4xl md:text-5xl font-bold mb-4 leading-tight">
+          <h1 className="text-4xl md:text-5xl font-bold mb-4 leading-tight uppercase">
             CORPORATE TRAINING OVERVIEW
           </h1>
           <button
@@ -380,8 +378,8 @@ export default function Home() {
         className="snap-start bg-[#f1f5f9] px-3 md:px-4 pt-[56px] md:pt-[64px] pb-3 md:pb-4 z-20 relative flex flex-col gap-2 md:gap-3"
         style={{ height: "100dvh" }}
       >
-        {/* FILTER BAR */}
-        <div className="flex flex-nowrap overflow-x-auto lg:overflow-visible gap-2 w-full shrink-0 relative z-[100] pb-1 [&::-webkit-scrollbar]:hidden">
+        {/* FILTER BAR - Menggunakan overflow-visible agar menu tidak terpotong container */}
+        <div className="flex flex-nowrap overflow-x-auto lg:overflow-visible gap-2 w-full shrink-0 relative z-[9999] pb-1 [&::-webkit-scrollbar]:hidden">
           <FilterDropdown
             title="DEPARTEMENT"
             options={DEPT_OPTIONS}
@@ -446,7 +444,6 @@ export default function Home() {
         style={{ height: "100dvh" }}
       >
         <div className="h-full w-full">
-          {/* 🔥 Filters diteruskan ke TrainingPlan */}
           <TrainingPlan filters={filters} />
         </div>
       </section>
