@@ -67,15 +67,13 @@ export default function Header({
         >
           <button
             onClick={resetFilters}
-            className="flex items-center gap-2 text-white/70 hover:text-white transition-all group"
+            className="flex items-center gap-1 text-white/70 hover:text-white transition-all group"
           >
             <RotateCcw
-              size={15}
+              size={21}
               className="group-hover:-rotate-180 transition duration-500 ease-out"
             />
-            <span className="text-[10px] md:text-[11px] font-bold uppercase tracking-widest hidden md:block mt-0.5">
-              Reset Filter
-            </span>
+            <span className="text-[10px] md:text-[11px] font-bold uppercase tracking-widest hidden md:block mt-0.5"></span>
           </button>
         </div>
 

@@ -1,13 +1,7 @@
 "use client";
 
 import React from "react";
-import {
-  HomeIcon,
-  LayoutDashboardIcon,
-  ClipboardListIcon,
-  CalendarIcon,
-  XIcon,
-} from "lucide-react";
+import { Home, PieChart, ClipboardList, Grid, Calendar, X } from "lucide-react";
 
 export default function Sidebar({
   mobileOpen,
@@ -16,112 +10,129 @@ export default function Sidebar({
   setActivePage,
 }) {
   const menuItems = [
-    { id: "home", label: "Home", icon: <HomeIcon size={20} /> },
+    {
+      id: "home",
+      label: "Home",
+      icon: <Home size={20} />,
+      activeClass:
+        "bg-slate-200 text-slate-800 font-bold border-l-4 border-slate-500",
+      hoverClass: "hover:bg-slate-100 hover:text-slate-700",
+    },
     {
       id: "mandays",
-      label: "Mandays Training",
-      icon: <LayoutDashboardIcon size={20} />,
+      label: "Training Mandays",
+      icon: <PieChart size={20} />,
+      activeClass:
+        "bg-[#000ebf]/10 text-[#000ebf] font-bold border-l-4 border-[#000ebf]",
+      hoverClass: "hover:bg-blue-50 hover:text-[#000ebf]",
     },
     {
       id: "training-plan",
       label: "Training Plan",
-      icon: <ClipboardListIcon size={20} />,
+      icon: <ClipboardList size={20} />,
+      activeClass:
+        "bg-[#65a30d]/15 text-[#4d7c0f] font-bold border-l-4 border-[#65a30d]",
+      hoverClass: "hover:bg-[#65a30d]/10 hover:text-[#4d7c0f]",
+    },
+    {
+      id: "matrix-competency",
+      label: "Matrix Competency",
+      icon: <Grid size={20} />,
+      activeClass:
+        "bg-red-100 text-[#dc2626] font-bold border-l-4 border-[#dc2626]",
+      hoverClass: "hover:bg-red-50 hover:text-[#dc2626]",
     },
     {
       id: "training-calendar",
       label: "Training Calendar",
-      icon: <CalendarIcon size={20} />,
+      icon: <Calendar size={20} />,
+      activeClass:
+        "bg-[#000ebf]/10 text-[#000ebf] font-bold border-l-4 border-[#000ebf]",
+      hoverClass: "hover:bg-blue-50 hover:text-[#000ebf]",
     },
   ];
 
-  const handleNav = (id) => {
+  const handleNavClick = (id) => {
     setActivePage(id);
     setMobileOpen(false);
 
-    // Scroll ke section
-    const el = document.getElementById(id);
-    if (el) {
-      el.scrollIntoView({ behavior: "smooth" });
-    }
+    // Delay disamakan dengan durasi animasi yang baru (300ms) agar terasa snappy
+    setTimeout(() => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    }, 300);
   };
 
   return (
     <>
-      {/* OVERLAY: Harus di atas Header (Header biasanya z-9999, jadi kita pakai z-[10000]) */}
-      {mobileOpen && (
-        <div
-          className="fixed inset-0 bg-black/60 z-[10000] backdrop-blur-sm transition-opacity duration-300"
-          onClick={() => setMobileOpen(false)}
-        />
-      )}
-
-      {/* SIDEBAR CONTAINER: z-[10001] agar di atas overlay dan header */}
+      {/* 1. LAYER BACKDROP (Layar Gelap Transparan) */}
+      {/* 🔥 FIX: Hapus backdrop-blur dan ubah durasi ke 300ms agar sangat ringan di HP */}
       <div
-        className={`fixed top-0 right-0 h-full w-72 bg-white z-[10001] shadow-2xl transform transition-transform duration-300 ease-out flex flex-col ${
+        className={`fixed inset-0 bg-[#0f172a]/40 z-[99995] transition-opacity duration-300 ease-out md:hidden ${
+          mobileOpen
+            ? "opacity-100 pointer-events-auto"
+            : "opacity-0 pointer-events-none"
+        }`}
+        onClick={() => setMobileOpen(false)}
+      ></div>
+
+      {/* 2. LACI SIDEBAR (Slide dari Kanan) */}
+      {/* 🔥 FIX: Durasi dipercepat jadi 300ms & tambah will-change untuk Hardware Acceleration */}
+      <aside
+        className={`fixed top-0 right-0 h-[100dvh] w-[280px] bg-white shadow-2xl z-[99999] transform transition-transform duration-300 ease-out flex flex-col ${
           mobileOpen ? "translate-x-0" : "translate-x-full"
         }`}
+        style={{ willChange: "transform" }}
       >
-        {/* HEADER SIDEBAR (LOGO & CLOSE BUTTON) */}
-        <div className="flex items-center justify-between p-5 border-b border-slate-100 shrink-0 bg-white">
-          <div className="flex flex-col gap-1">
-            {/* 🔥 LOGO FILTRONA */}
-            <img
-              src="/filtrona-logo-colorg.png"
-              alt="Filtrona"
-              className="h-7 object-contain w-auto mb-1"
-              onError={(e) => {
-                e.target.src =
-                  "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR_p_G5_JpQ2ZfE9J9m9P9P9P9P9P9P9P9P9A&s";
-              }} // Fallback jika logo tidak ketemu
-            />
-          </div>
+        {/* HEADER SIDEBAR */}
+        <div className="flex items-center justify-between p-6 border-b border-slate-100">
+          {/* 🔥 FIX: Menggunakan Logo Filtrona Colorg sesuai permintaan */}
+          <img
+            src="/filtrona-logo-colorg.png"
+            alt="Filtrona"
+            className="h-6 object-contain"
+            onError={(e) => {
+              e.target.src =
+                "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR_p_G5_JpQ2ZfE9J9m9P9P9P9P9P9P9P9P9A&s";
+            }}
+          />
+
           <button
             onClick={() => setMobileOpen(false)}
-            className="p-2 hover:bg-slate-100 text-slate-400 hover:text-slate-600 rounded-xl transition-all"
+            className="p-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-full transition-colors active:scale-95"
           >
-            <XIcon size={24} />
+            <X size={18} strokeWidth={3} />
           </button>
         </div>
 
-        {/* MENU LIST */}
-        <nav className="flex-1 overflow-y-auto p-4 space-y-2">
+        {/* LIST TOMBOL MENU */}
+        <div className="flex-1 overflow-y-auto py-4 px-3 flex flex-col gap-2">
           {menuItems.map((item) => {
             const isActive = activePage === item.id;
+
             return (
               <button
                 key={item.id}
-                onClick={() => handleNav(item.id)}
-                className={`w-full flex items-center gap-4 px-4 py-4 rounded-2xl transition-all duration-200 group ${
+                onClick={() => handleNavClick(item.id)}
+                className={`flex items-center gap-4 w-full p-3.5 rounded-lg transition-all duration-300 text-sm overflow-hidden relative ${
                   isActive
-                    ? "bg-blue-600 text-white shadow-lg shadow-blue-200"
-                    : "text-slate-500 hover:bg-blue-50 hover:text-blue-600"
+                    ? item.activeClass
+                    : `text-slate-500 border-l-4 border-transparent ${item.hoverClass}`
                 }`}
               >
                 <div
-                  className={`transition-transform duration-200 ${isActive ? "scale-110" : "group-hover:scale-110"}`}
+                  className={`${isActive ? "scale-110" : "scale-100"} transition-transform duration-300`}
                 >
                   {item.icon}
                 </div>
-                <span
-                  className={`text-sm font-bold ${isActive ? "opacity-100" : "opacity-90"}`}
-                >
-                  {item.label}
-                </span>
-                {isActive && (
-                  <div className="ml-auto w-1.5 h-1.5 bg-white rounded-full" />
-                )}
+                <span className="tracking-wide">{item.label}</span>
               </button>
             );
           })}
-        </nav>
-
-        {/* FOOTER */}
-        <div className="p-6 border-t border-slate-50 bg-slate-50 shrink-0">
-          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[3px] text-center">
-            FILTRONA © 2026
-          </p>
         </div>
-      </div>
+      </aside>
     </>
   );
 }
