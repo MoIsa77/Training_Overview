@@ -392,59 +392,17 @@ export default function TrainingPlan({ filters: globalFilters }) {
   };
 
   return (
-    <div className="h-full w-full flex flex-col gap-3 md:gap-4 p-3 md:p-4 font-sans bg-transparent">
-      {/* 🔥 FIX: TOMBOL FILTER DIPINDAHKAN KE ATAS */}
-      <div className="flex gap-2 md:gap-3 shrink-0">
-        <FilterDropdown
-          title="DEPARTEMENT"
-          options={DEPT_OPTIONS}
-          selected={localFilters.department}
-          onChange={(val) =>
-            setLocalFilters({ ...localFilters, department: val })
-          }
-          colorClass="bg-[#0284c7] hover:bg-[#0369a1]"
-          menuColorClass="bg-[#0284c7]"
-          icon={
-            <svg
-              className="w-4 h-4 opacity-90"
-              fill="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path d="M19 2H9c-1.103 0-2 .897-2 2v5.586l-4.707 4.707A1 1 0 0 0 2 15v6h6v-6h4v6h10V4c0-1.103-.897-2-2-2zm-8 18H4v-4.586l3-3L11 16.414V20zm8 0h-6v-6H7v-3.586l2-2V4h10v16z" />
-              <path d="M11 6h6v2h-6zm0 4h6v2h-6zm0 4h6v2h-6z" />
-            </svg>
-          }
-        />
-        <FilterDropdown
-          title="TRAINING TYPE"
-          options={TYPE_OPTIONS}
-          selected={localFilters.trainingType}
-          onChange={(val) =>
-            setLocalFilters({ ...localFilters, trainingType: val })
-          }
-          colorClass="bg-[#84cc16] hover:bg-[#65a30d]"
-          menuColorClass="bg-[#84cc16]"
-          icon={
-            <svg
-              className="w-4 h-4 opacity-90"
-              fill="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path d="M21 21H3V3h2v16h16v2zM7 10h4v8H7v-8zm6-4h4v12h-4V6z" />
-            </svg>
-          }
-        />
-      </div>
-
-      {/* 🔥 FIX: KONTEN SEKARANG BISA DI-SCROLL DI HP (overflow-y-auto) */}
-      <div className="flex-1 w-full flex flex-col lg:flex-row gap-3 md:gap-4 min-h-0 overflow-y-auto lg:overflow-hidden custom-scrollbar pb-10 lg:pb-0">
+    // 🔥 FIX: Wrapper paling luar diberi overflow-y-auto untuk HP agar bisa di-scroll utuh
+    <div className="h-full w-full p-3 md:p-4 font-sans bg-transparent overflow-y-auto lg:overflow-hidden custom-scrollbar">
+      {/* Layout Flex Row untuk Desktop, Flex Col untuk HP */}
+      <div className="flex flex-col lg:flex-row gap-3 md:gap-4 w-full min-h-0 lg:h-full pb-10 lg:pb-0">
         {/* ================= KIRI: TABEL ================= */}
-        <div className="flex-[1.5] flex flex-col gap-3 md:gap-4 w-full shrink-0 lg:shrink min-h-0">
+        <div className="flex-[1.5] flex flex-col gap-3 md:gap-4 min-w-0">
           {/* TABEL PLANNED TRAINING */}
           <div className="flex-1 bg-white rounded-2xl border border-slate-300 shadow-md p-3 md:p-4 flex flex-col min-h-[350px] lg:min-h-0 overflow-hidden">
             <div className="flex items-center gap-2 mb-3 shrink-0">
               <h2 className="font-bold text-slate-800 text-xs md:text-sm tracking-wide uppercase">
-                PLANNED TRAINING ({totalPlanned})
+                PLANNED TRAINING
               </h2>
               <div className="flex gap-1.5">
                 <div className="w-2 h-2 rounded-full bg-blue-500"></div>
@@ -497,7 +455,7 @@ export default function TrainingPlan({ filters: globalFilters }) {
           <div className="flex-1 bg-white rounded-2xl border border-slate-300 shadow-md p-3 md:p-4 flex flex-col min-h-[350px] lg:min-h-0 overflow-hidden">
             <div className="flex items-center gap-2 mb-3 shrink-0">
               <h2 className="font-bold text-slate-800 text-xs md:text-sm tracking-wide uppercase">
-                AD HOC TRAINING ({totalAdHoc})
+                AD HOC TRAINING
               </h2>
               <div className="flex gap-1.5">
                 <div className="w-2 h-2 rounded-full bg-blue-500"></div>
@@ -545,9 +503,54 @@ export default function TrainingPlan({ filters: globalFilters }) {
           </div>
         </div>
 
-        {/* ================= KANAN: DONUT CHART ================= */}
-        <div className="w-full lg:w-[35%] flex flex-col shrink-0 lg:shrink min-h-[350px] lg:min-h-0">
-          <div className="flex-1 bg-white rounded-2xl border border-slate-300 shadow-md p-4 flex flex-col overflow-hidden relative">
+        {/* ================= KANAN: FILTERS & DONUT CHART ================= */}
+        {/* Layout dikembalikan: Filter berada di dalam kolom kanan, tepat di atas Chart */}
+        <div className="w-full lg:w-[35%] flex flex-col gap-3 md:gap-4 shrink-0 lg:min-h-0">
+          {/* HANYA 2 TOMBOL FILTER */}
+          <div className="flex gap-2 md:gap-3 shrink-0">
+            <FilterDropdown
+              title="DEPARTEMENT"
+              options={DEPT_OPTIONS}
+              selected={localFilters.department}
+              onChange={(val) =>
+                setLocalFilters({ ...localFilters, department: val })
+              }
+              colorClass="bg-[#0284c7] hover:bg-[#0369a1]"
+              menuColorClass="bg-[#0284c7]"
+              icon={
+                <svg
+                  className="w-4 h-4 opacity-90"
+                  fill="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path d="M19 2H9c-1.103 0-2 .897-2 2v5.586l-4.707 4.707A1 1 0 0 0 2 15v6h6v-6h4v6h10V4c0-1.103-.897-2-2-2zm-8 18H4v-4.586l3-3L11 16.414V20zm8 0h-6v-6H7v-3.586l2-2V4h10v16z" />
+                  <path d="M11 6h6v2h-6zm0 4h6v2h-6zm0 4h6v2h-6z" />
+                </svg>
+              }
+            />
+            <FilterDropdown
+              title="TRAINING TYPE"
+              options={TYPE_OPTIONS}
+              selected={localFilters.trainingType}
+              onChange={(val) =>
+                setLocalFilters({ ...localFilters, trainingType: val })
+              }
+              colorClass="bg-[#84cc16] hover:bg-[#65a30d]"
+              menuColorClass="bg-[#84cc16]"
+              icon={
+                <svg
+                  className="w-4 h-4 opacity-90"
+                  fill="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path d="M21 21H3V3h2v16h16v2zM7 10h4v8H7v-8zm6-4h4v12h-4V6z" />
+                </svg>
+              }
+            />
+          </div>
+
+          {/* DONUT CHART */}
+          <div className="flex-1 bg-white rounded-2xl border border-slate-300 shadow-md p-4 flex flex-col overflow-hidden min-h-[350px] lg:min-h-0 relative">
             <div className="flex items-center gap-2 mb-4 shrink-0">
               <h2 className="font-bold text-slate-800 text-xs md:text-sm tracking-wide uppercase">
                 PLANNED VS AD HOC TRAINING
