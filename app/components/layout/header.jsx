@@ -29,7 +29,7 @@ export default function Header({
       {/* ================= KIRI: LOGO & JUDUL PAGE ================= */}
       <div className="relative z-10 flex items-center gap-4 md:gap-6">
         <img
-          src="/filtrona-logo.png"
+          src="/filtrona-logo-color.png"
           alt="Filtrona"
           className={`h-5 md:h-6 object-contain transition-all duration-500 ease-out ${
             isHome ? "brightness-0 invert opacity-90" : "brightness-100"
