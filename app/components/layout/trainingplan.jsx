@@ -11,7 +11,7 @@ import {
   Legend,
 } from "recharts";
 
-// Data Opsi Filter (Hanya 2 sesuai desain)
+// Data Opsi Filter
 const DEPT_OPTIONS = [
   "Supply Chain",
   "QA",
@@ -392,9 +392,7 @@ export default function TrainingPlan({ filters: globalFilters }) {
   };
 
   return (
-    // 🔥 FIX: Wrapper paling luar diberi overflow-y-auto untuk HP agar bisa di-scroll utuh
     <div className="h-full w-full p-3 md:p-4 font-sans bg-transparent overflow-y-auto lg:overflow-hidden custom-scrollbar">
-      {/* Layout Flex Row untuk Desktop, Flex Col untuk HP */}
       <div className="flex flex-col lg:flex-row gap-3 md:gap-4 w-full min-h-0 lg:h-full pb-10 lg:pb-0">
         {/* ================= KIRI: TABEL ================= */}
         <div className="flex-[1.5] flex flex-col gap-3 md:gap-4 min-w-0">
@@ -504,9 +502,7 @@ export default function TrainingPlan({ filters: globalFilters }) {
         </div>
 
         {/* ================= KANAN: FILTERS & DONUT CHART ================= */}
-        {/* Layout dikembalikan: Filter berada di dalam kolom kanan, tepat di atas Chart */}
         <div className="w-full lg:w-[35%] flex flex-col gap-3 md:gap-4 shrink-0 lg:min-h-0">
-          {/* HANYA 2 TOMBOL FILTER */}
           <div className="flex gap-2 md:gap-3 shrink-0">
             <FilterDropdown
               title="DEPARTEMENT"
@@ -562,52 +558,56 @@ export default function TrainingPlan({ filters: globalFilters }) {
               </div>
             </div>
 
-            <div className="flex-1 min-h-0 relative bg-slate-50/50 rounded-xl p-2 border border-slate-100">
+            {/* 🔥 FIX: Diberi min-h-[250px] di HP agar container Recharts tidak collapse jadi 0 */}
+            <div className="flex-1 min-h-[250px] lg:min-h-0 relative bg-slate-50/50 rounded-xl p-2 border border-slate-100">
               {chartData.length === 0 ? (
                 <div className="absolute inset-0 flex items-center justify-center font-bold text-slate-400">
                   Data Kosong
                 </div>
               ) : (
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={chartData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius="50%"
-                      outerRadius="85%"
-                      dataKey="value"
-                      stroke="#ffffff"
-                      strokeWidth={4}
-                      labelLine={false}
-                      label={renderCustomizedLabel}
-                    >
-                      {chartData.map((entry, index) => (
-                        <Cell
-                          key={`cell-${index}`}
-                          fill={COLORS[index % COLORS.length]}
-                        />
-                      ))}
-                    </Pie>
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: "#fff",
-                        borderColor: "#ccc",
-                        color: "#0f172a",
-                      }}
-                    />
-                    <Legend
-                      verticalAlign="bottom"
-                      height={36}
-                      iconType="circle"
-                      wrapperStyle={{
-                        fontSize: "12px",
-                        fontWeight: "bold",
-                        color: "#1e293b",
-                      }}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
+                /* 🔥 FIX: Dibungkus dengan absolute inset-0 agar memaksa Recharts membaca ukuran Parent */
+                <div className="absolute inset-0">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={chartData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius="50%"
+                        outerRadius="85%"
+                        dataKey="value"
+                        stroke="#ffffff"
+                        strokeWidth={4}
+                        labelLine={false}
+                        label={renderCustomizedLabel}
+                      >
+                        {chartData.map((entry, index) => (
+                          <Cell
+                            key={`cell-${index}`}
+                            fill={COLORS[index % COLORS.length]}
+                          />
+                        ))}
+                      </Pie>
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: "#fff",
+                          borderColor: "#ccc",
+                          color: "#0f172a",
+                        }}
+                      />
+                      <Legend
+                        verticalAlign="bottom"
+                        height={36}
+                        iconType="circle"
+                        wrapperStyle={{
+                          fontSize: "12px",
+                          fontWeight: "bold",
+                          color: "#1e293b",
+                        }}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
               )}
             </div>
           </div>
