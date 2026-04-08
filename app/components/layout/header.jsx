@@ -1,69 +1,76 @@
 "use client";
 
-export default function Header({ setMobileOpen, activePage, resetFilters }) {
-  // Patokan utama: Apakah activePage adalah "home"?
-  const isHome = activePage === "home";
+import React from "react";
+import { MenuIcon, RotateCcw } from "lucide-react";
+
+export default function Header({
+  setMobileOpen,
+  isHome,
+  resetFilters,
+  activePage,
+}) {
+  const pageTitles = {
+    home: "",
+    mandays: "Mandays Training",
+    "training-plan": "Training Plan",
+    "training-calendar": "Training Calendar 2026",
+  };
 
   return (
     <header
-      // 🔥 Pastikan menggunakan z-[9999] agar selalu di atas
-      className={`fixed top-0 w-full text-white h-14 flex items-center justify-between px-4 lg:px-6 z-[9999] transition-all duration-300 ${
-        isHome ? "bg-transparent shadow-none" : "bg-[#1e3a8a] shadow-md"
+      // 🔥 FIX: Transisi bg-transparent akan dipaksa saat isHome true
+      className={`fixed top-0 left-0 w-full z-[9990] h-[60px] md:h-[70px] flex items-center justify-between px-6 md:px-10 transition-all duration-300 ${
+        isHome
+          ? "bg-transparent border-none shadow-none"
+          : "bg-[#1e3b8a] shadow-lg"
       }`}
     >
-      {/* KIRI: Logo Filtrona */}
-      <div className="flex items-center">
+      <div className="flex items-center gap-4 md:gap-6">
+        {/* LOGO FILTRONA */}
         <img
-          src="/filtrona-logo-white.png"
+          src="/filtrona-logo-color.png"
           alt="Filtrona"
-          className="h-6 object-contain"
+          className="h-5 md:h-6 object-contain"
+          onError={(e) => {
+            e.target.src =
+              "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR_p_G5_JpQ2ZfE9J9m9P9P9P9P9P9P9P9P9A&s";
+          }}
         />
+
+        {/* JUDUL & GARIS (Hanya jika BUKAN di Home) */}
+        {!isHome && (
+          <>
+            <div className="h-6 w-[1px] bg-white/20 hidden md:block"></div>
+            <h1 className="text-white font-black text-xs md:text-sm uppercase tracking-[0.2em] truncate max-w-[150px] md:max-w-none opacity-90">
+              {pageTitles[activePage] || ""}
+            </h1>
+          </>
+        )}
       </div>
 
-      {/* KANAN: Reset Filter Icon & Hamburger Menu */}
-      <div className="flex items-center gap-2 md:gap-3">
-        {/* Tombol Reset Filter HANYA muncul jika BUKAN di home */}
+      <div className="flex items-center gap-5 md:gap-8">
+        {/* TOMBOL RESET FILTER (Hanya jika BUKAN di Home) */}
         {!isHome && (
           <button
             onClick={resetFilters}
-            title="Reset Filters"
-            className="text-white hover:text-gray-200 transition p-2 rounded-full hover:bg-white/20 active:scale-95 cursor-pointer flex items-center justify-center bg-transparent border-none outline-none"
+            className="flex items-center gap-2 text-white/70 hover:text-white transition-all group"
           >
-            <svg
-              className="w-5 h-5 md:w-5 md:h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-              />
-            </svg>
+            <RotateCcw
+              size={23}
+              className="group-hover:-rotate-180 transition duration-500 ease-out"
+            />
           </button>
         )}
 
-        {/* Tombol Hamburger Sidebar */}
         <button
           onClick={() => setMobileOpen(true)}
-          title="Menu"
-          className="text-white hover:text-gray-200 focus:outline-none transition cursor-pointer p-2 rounded-full hover:bg-white/20 bg-transparent border-none outline-none"
+          className={`p-2 rounded-lg transition-all duration-300 ${
+            isHome
+              ? "text-white hover:bg-white/10"
+              : "text-white hover:bg-blue-800/50"
+          }`}
         >
-          <svg
-            className="w-6 h-6 md:w-7 md:h-7"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M4 6h16M4 12h16M4 18h16"
-            />
-          </svg>
+          <MenuIcon size={28} strokeWidth={1.5} />
         </button>
       </div>
     </header>

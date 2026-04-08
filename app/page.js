@@ -8,9 +8,6 @@ import MandaysSummary from "./components/layout/mandayssummary";
 import TrainingPlan from "./components/layout/trainingplan";
 import TrainingCalendar from "./components/layout/trainingcalendar";
 
-// ==========================================
-// DATA OPTIONS UNTUK FILTER
-// ==========================================
 const DEPT_OPTIONS = [
   "Supply Chain",
   "QA",
@@ -41,9 +38,6 @@ const MONTH_OPTIONS = [
   "December",
 ];
 
-// ==========================================
-// KOMPONEN: FILTER DROPDOWN (PREMIUM & AUTO-CLOSE)
-// ==========================================
 const FilterDropdown = ({
   title,
   options,
@@ -55,49 +49,32 @@ const FilterDropdown = ({
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
 
-  // Menutup otomatis saat klik di luar
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target))
         setIsOpen(false);
-      }
     };
-    if (isOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
-    }
+    if (isOpen) document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isOpen]);
 
   const handleToggle = (option) => {
-    let newSelected;
-    if (selected.includes(option)) {
-      newSelected = selected.filter((item) => item !== option);
-    } else {
-      newSelected = [...selected, option];
-    }
+    let newSelected = selected.includes(option)
+      ? selected.filter((item) => item !== option)
+      : [...selected, option];
     onChange(newSelected);
-
-    // 🔥 AUTO-CLOSE: Langsung tutup otomatis setelah milih opsi (delay 150ms agar smooth)
-    setTimeout(() => {
-      setIsOpen(false);
-    }, 150);
+    setTimeout(() => setIsOpen(false), 150);
   };
 
   const handleSelectAll = () => {
-    if (selected.length === options.length) {
-      onChange([]);
-    } else {
-      onChange(options);
-    }
+    selected.length === options.length ? onChange([]) : onChange(options);
   };
 
   return (
-    // 🔥 FIX: Z-index sangat tinggi (99999) saat dibuka agar menembus chart
     <div
       ref={dropdownRef}
       className={`relative flex-none w-[140px] lg:flex-1 lg:w-auto ${isOpen ? "z-[99999]" : "z-10"}`}
     >
-      {/* Tombol Utama */}
       <div
         onClick={() => setIsOpen(!isOpen)}
         className={`${colorClass} transition-all duration-200 text-white h-9 md:h-10 rounded-xl flex items-center justify-between px-3 md:px-4 font-bold text-[9px] md:text-[11px] cursor-pointer shadow-lg hover:brightness-110 active:scale-95`}
@@ -112,15 +89,11 @@ const FilterDropdown = ({
 
       {isOpen && (
         <>
-          {/* Backdrop Gelap Khusus HP */}
           <div
             className="fixed inset-0 bg-black/50 backdrop-blur-[2px] z-[99998] md:hidden"
             onClick={() => setIsOpen(false)}
           ></div>
-
-          {/* Menu Dropdown - Menggunakan fixed di HP agar tidak terpotong container */}
           <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[85vw] max-w-[300px] max-h-[65vh] bg-white rounded-2xl shadow-2xl z-[99999] flex flex-col overflow-hidden md:absolute md:top-full md:left-0 md:mt-2 md:w-60 md:max-h-72 md:translate-x-0 md:translate-y-0 md:rounded-xl border border-slate-100">
-            {/* Header Menu / Select All */}
             <div
               className={`p-3 md:p-3 ${menuColorClass} text-white cursor-pointer flex items-center justify-between text-[11px] md:text-xs font-bold sticky top-0 shrink-0 shadow-sm`}
               onClick={handleSelectAll}
@@ -157,8 +130,6 @@ const FilterDropdown = ({
                 ✕
               </button>
             </div>
-
-            {/* List Item dengan Hover Effect & Custom Checkbox */}
             <div className="overflow-y-auto flex-1 py-1 custom-scrollbar bg-white">
               {options.map((opt) => {
                 const isSelected = selected.includes(opt);
@@ -196,7 +167,6 @@ const FilterDropdown = ({
                 );
               })}
             </div>
-
             <div
               className="p-3 bg-slate-50 border-t border-slate-100 text-center text-xs font-bold text-blue-600 md:hidden active:bg-slate-100 cursor-pointer"
               onClick={() => setIsOpen(false)}
@@ -206,67 +176,55 @@ const FilterDropdown = ({
           </div>
         </>
       )}
-
-      <style jsx>{`
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 4px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: transparent;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: #cbd5e1;
-          border-radius: 10px;
-        }
-      `}</style>
     </div>
   );
 };
 
-// ==========================================
-// KOMPONEN: TABEL UPCOMING TRAINING
-// ==========================================
 const UpcomingTrainingTable = () => (
-  <div className="bg-white rounded-2xl border border-slate-300 shadow-md p-3 flex flex-col h-full min-h-0 overflow-hidden">
-    <h3 className="font-bold text-slate-800 mb-2 shrink-0 text-xs uppercase tracking-wider">
-      UPCOMING TRAINING
-    </h3>
-    <div className="flex-1 overflow-y-auto">
+  <div className="bg-white rounded-2xl border border-slate-300 shadow-md p-4 flex flex-col h-full min-h-0 overflow-hidden">
+    <div className="flex items-center gap-2 mb-3 shrink-0">
+      <h3 className="font-bold text-slate-800 text-xs md:text-sm tracking-wide uppercase">
+        UPCOMING TRAINING
+      </h3>
+      <div className="flex gap-1.5">
+        <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+        <div className="w-2 h-2 rounded-full bg-green-500"></div>
+        <div className="w-2 h-2 rounded-full bg-red-500"></div>
+      </div>
+    </div>
+
+    <div className="flex-1 overflow-y-auto rounded-xl border border-slate-100 custom-scrollbar">
       <table className="w-full text-[10px] md:text-[11px] text-left">
-        <thead className="bg-[#8b5cf6] text-white sticky top-0 z-10">
+        <thead className="bg-[#8b5cf6] text-white sticky top-0 z-10 shadow-sm">
           <tr>
-            <th className="p-1.5 text-center border-b border-purple-400 min-w-[70px]">
-              Date
-            </th>
-            <th className="p-1.5 text-center border-b border-purple-400 min-w-[70px]">
-              Dept
-            </th>
-            <th className="p-1.5 text-center border-b border-purple-400 min-w-[90px]">
+            <th className="p-2.5 text-center font-bold tracking-wider">Date</th>
+            <th className="p-2.5 text-center font-bold tracking-wider">Dept</th>
+            <th className="p-2.5 text-center font-bold tracking-wider">
               Training Type
             </th>
-            <th className="p-1.5 text-left border-b border-purple-400 min-w-[120px]">
+            <th className="p-2.5 text-left font-bold tracking-wider">
               Participants
             </th>
           </tr>
         </thead>
-        <tbody className="text-slate-700">
-          <tr className="border-b border-slate-200 bg-purple-50 hover:bg-purple-100 transition">
-            <td className="p-1.5 text-center">02-05 Mar</td>
-            <td className="text-center">FIC</td>
-            <td className="text-center">Technical</td>
-            <td className="p-1.5">Luthfi Dhiya Ulhaq</td>
+        <tbody className="text-slate-700 divide-y divide-slate-100">
+          <tr className="hover:bg-slate-50 transition">
+            <td className="p-2.5 text-center font-medium">02-05 Mar</td>
+            <td className="p-2.5 text-center">FIC</td>
+            <td className="p-2.5 text-center">Technical</td>
+            <td className="p-2.5 font-medium">Luthfi Dhiya Ulhaq</td>
           </tr>
-          <tr className="border-b border-slate-200 hover:bg-slate-50 transition">
-            <td className="p-1.5 text-center">02-05 Mar</td>
-            <td className="text-center">FIC</td>
-            <td className="text-center">Technical</td>
-            <td className="p-1.5">Eka Pria Utama Mulyana</td>
+          <tr className="hover:bg-slate-50 transition">
+            <td className="p-2.5 text-center font-medium">02-05 Mar</td>
+            <td className="p-2.5 text-center">FIC</td>
+            <td className="p-2.5 text-center">Technical</td>
+            <td className="p-2.5 font-medium">Eka Pria Utama Mulyana</td>
           </tr>
-          <tr className="border-b border-slate-200 bg-purple-50 hover:bg-purple-100 transition">
-            <td className="p-1.5 text-center">1-2 July</td>
-            <td className="text-center">FIC</td>
-            <td className="text-center">Technical</td>
-            <td className="p-1.5">Maria Widya Fredlina</td>
+          <tr className="hover:bg-slate-50 transition">
+            <td className="p-2.5 text-center font-medium">1-2 July</td>
+            <td className="p-2.5 text-center">FIC</td>
+            <td className="p-2.5 text-center">Technical</td>
+            <td className="p-2.5 font-medium">Maria Widya Fredlina</td>
           </tr>
         </tbody>
       </table>
@@ -274,9 +232,6 @@ const UpcomingTrainingTable = () => (
   </div>
 );
 
-// ==========================================
-// MAIN COMPONENT (PAGE)
-// ==========================================
 export default function Home() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [activePage, setActivePage] = useState("home");
@@ -290,11 +245,9 @@ export default function Home() {
     month: [],
   });
 
-  const updateFilter = (key, value) => {
+  const updateFilter = (key, value) =>
     setFilters((prev) => ({ ...prev, [key]: value }));
-  };
-
-  const resetFilters = () => {
+  const resetFilters = () =>
     setFilters({
       department: [],
       trainingType: [],
@@ -302,11 +255,10 @@ export default function Home() {
       year: [],
       month: [],
     });
-  };
 
   const handleScroll = (e) => {
     const { scrollTop, clientHeight } = e.target;
-    setIsHome(scrollTop < 50);
+    setIsHome(scrollTop < 10);
 
     if (scrollTop < clientHeight / 2) {
       if (activePage !== "home") setActivePage("home");
@@ -323,9 +275,8 @@ export default function Home() {
   const scrollToSection = (id) => {
     const container = document.getElementById("main-scroll");
     const el = document.getElementById(id);
-    if (container && el) {
+    if (container && el)
       container.scrollTo({ top: el.offsetTop, behavior: "smooth" });
-    }
   };
 
   return (
@@ -344,6 +295,7 @@ export default function Home() {
         setMobileOpen={setMobileOpen}
         isHome={isHome}
         resetFilters={resetFilters}
+        activePage={activePage}
       />
       <Sidebar
         mobileOpen={mobileOpen}
@@ -365,21 +317,21 @@ export default function Home() {
           </h1>
           <button
             onClick={() => scrollToSection("mandays")}
-            className="px-6 py-3 border border-white rounded-full hover:bg-white hover:text-black transition duration-300"
+            className="px-6 py-3 border border-white rounded-full hover:bg-white hover:text-black transition duration-300 shadow-lg"
           >
             WATCH NOW ↓
           </button>
         </div>
       </section>
 
-      {/* DASHBOARD */}
+      {/* DASHBOARD OVERVIEW */}
       <section
         id="mandays"
-        className="snap-start bg-[#f1f5f9] px-3 md:px-4 pt-[56px] md:pt-[64px] pb-3 md:pb-4 z-20 relative flex flex-col gap-2 md:gap-3"
+        className="snap-start bg-[#f1f5f9] px-3 md:px-5 pt-[80px] md:pt-[90px] pb-4 z-20 relative flex flex-col gap-3 md:gap-4"
         style={{ height: "100dvh" }}
       >
-        {/* FILTER BAR - Menggunakan overflow-visible agar menu tidak terpotong container */}
-        <div className="flex flex-nowrap overflow-x-auto lg:overflow-visible gap-2 w-full shrink-0 relative z-[9999] pb-1 [&::-webkit-scrollbar]:hidden">
+        {/* 🔥 FIX KRITIKAL: Memastikan md:overflow-visible dan md:flex-wrap agar Dropdown tidak terpotong atau terlempar ke belakang */}
+        <div className="flex flex-nowrap md:flex-wrap overflow-x-auto md:overflow-visible gap-2 md:gap-3 w-full shrink-0 relative z-[99999] pb-2 [&::-webkit-scrollbar]:hidden">
           <FilterDropdown
             title="DEPARTEMENT"
             options={DEPT_OPTIONS}
@@ -422,11 +374,12 @@ export default function Home() {
           />
         </div>
 
-        <div className="flex-1 w-full flex flex-col lg:flex-row gap-3 min-h-0 overflow-y-auto lg:overflow-hidden pb-10 lg:pb-0 relative z-10">
+        {/* KONTEN BAWAH DENGAN Z-INDEX LEBIH RENDAH */}
+        <div className="flex-1 w-full flex flex-col lg:flex-row gap-3 md:gap-4 min-h-0 overflow-y-auto lg:overflow-hidden pb-10 lg:pb-0 relative z-10">
           <div className="w-full lg:w-[30%] lg:min-w-[280px] lg:max-w-[380px] shrink-0 flex flex-col min-h-[600px] lg:min-h-0">
             <MandaysSummary filters={filters} />
           </div>
-          <div className="flex-1 w-full flex flex-col gap-3 min-w-0">
+          <div className="flex-1 w-full flex flex-col gap-3 md:gap-4 min-w-0">
             <div className="flex-1 flex flex-col min-h-0 relative z-30">
               <TrainingAnalytics filters={filters} />
             </div>
@@ -440,16 +393,17 @@ export default function Home() {
       {/* PLAN & CALENDAR */}
       <section
         id="training-plan"
-        className="snap-start bg-[#f1f5f9] pt-[56px] md:pt-[64px] pb-4 overflow-hidden z-20 relative"
+        className="snap-start bg-[#f1f5f9] pt-[80px] md:pt-[90px] pb-4 px-3 md:px-5 overflow-hidden z-20 relative"
         style={{ height: "100dvh" }}
       >
         <div className="h-full w-full">
           <TrainingPlan filters={filters} />
         </div>
       </section>
+
       <section
         id="training-calendar"
-        className="snap-start bg-[#f1f5f9] pt-[56px] md:pt-[64px] pb-4 overflow-hidden z-20 relative"
+        className="snap-start bg-[#f1f5f9] pt-[80px] md:pt-[90px] pb-4 px-3 md:px-5 overflow-hidden z-20 relative"
         style={{ height: "100dvh" }}
       >
         <div className="h-full w-full">

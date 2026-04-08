@@ -29,7 +29,6 @@ export default function TrainingAnalytics({ filters = {} }) {
 
       const data = await res.json();
 
-      // 🔥 PERBAIKAN: Fungsi safeCheck yang kebal error dari angka / null
       const safeCheck = (arr, val) => {
         if (val === null || val === undefined) return false;
         const strVal = String(val).toLowerCase().trim();
@@ -48,7 +47,6 @@ export default function TrainingAnalytics({ filters = {} }) {
         const year = row["Year"] || row["Training Year"] || "";
         const month = row["Month"] || row["Training Month"] || "";
 
-        // Filter Multi-Select (Array)
         if (
           filters?.department?.length > 0 &&
           !safeCheck(filters.department, department)
@@ -137,9 +135,18 @@ export default function TrainingAnalytics({ filters = {} }) {
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 w-full h-full min-h-0">
       {/* CARD 1: TRAINING BY TYPE */}
       <div className="bg-white rounded-2xl border border-slate-300 shadow-md p-3 md:p-4 flex flex-col h-[300px] lg:h-full min-h-0 overflow-hidden">
-        <h2 className="font-semibold text-sm md:text-base text-gray-700 mb-2 shrink-0">
-          TRAINING BY TYPE
-        </h2>
+        {/* 🔥 FIX: Judul dengan 3 Titik Warna */}
+        <div className="flex items-center gap-2 mb-3 shrink-0">
+          <h2 className="font-bold text-slate-800 text-xs md:text-sm tracking-wide uppercase">
+            TRAINING BY TYPE
+          </h2>
+          <div className="flex gap-1.5 ml-1">
+            <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
+            <div className="w-1.5 h-1.5 rounded-full bg-green-500"></div>
+            <div className="w-1.5 h-1.5 rounded-full bg-red-500"></div>
+          </div>
+        </div>
+
         <div className="flex-1 min-h-0 relative">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
@@ -166,9 +173,18 @@ export default function TrainingAnalytics({ filters = {} }) {
 
       {/* CARD 2: TRAINING BY CATEGORY */}
       <div className="bg-white rounded-2xl border border-slate-300 shadow-md p-3 md:p-4 flex flex-col h-[300px] lg:h-full min-h-0 overflow-hidden">
-        <h2 className="font-semibold text-sm md:text-base text-gray-700 mb-2 shrink-0">
-          TRAINING BY CATEGORY
-        </h2>
+        {/* 🔥 FIX: Judul dengan 3 Titik Warna */}
+        <div className="flex items-center gap-2 mb-3 shrink-0">
+          <h2 className="font-bold text-slate-800 text-xs md:text-sm tracking-wide uppercase">
+            TRAINING BY CATEGORY
+          </h2>
+          <div className="flex gap-1.5 ml-1">
+            <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
+            <div className="w-1.5 h-1.5 rounded-full bg-green-500"></div>
+            <div className="w-1.5 h-1.5 rounded-full bg-red-500"></div>
+          </div>
+        </div>
+
         <div className="flex-1 min-h-0 relative">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart

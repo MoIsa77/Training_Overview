@@ -180,6 +180,11 @@ export default function MandaysSummary({ filters = {} }) {
           👤
         </div>
         <span className="text-sm tracking-wide">TRAINING MANDAYS</span>
+        <div className="flex gap-1.5">
+          <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+          <div className="w-2 h-2 rounded-full bg-green-500"></div>
+          <div className="w-2 h-2 rounded-full bg-red-500"></div>
+        </div>
       </div>
 
       {/* GENDER - SIDE-BY-SIDE */}
