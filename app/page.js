@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { createPortal } from "react-dom"; // 🔥 FIX: Import createPortal untuk memecahkan masalah Z-Index di Mobile
+import { createPortal } from "react-dom";
 import Header from "./components/layout/header";
 import Sidebar from "./components/layout/sidebar";
 import TrainingAnalytics from "./components/layout/traininganalytics";
@@ -51,17 +51,32 @@ const FilterDropdown = ({
   menuColorClass,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [mounted, setMounted] = useState(false); // Untuk menghindari error hydration di Next.js
+  const [mounted, setMounted] = useState(false);
   const dropdownRef = useRef(null);
+  const mobileMenuRef = useRef(null); // 🔥 Sensor tambahan khusus untuk menu portal di HP
 
   useEffect(() => {
     setMounted(true);
     const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target))
+      // 🔥 FIX: Mengecek apakah klik terjadi di luar tombol DAN di luar menu portal
+      const isOutsideDropdown =
+        dropdownRef.current && !dropdownRef.current.contains(event.target);
+      const isOutsideMobileMenu =
+        mobileMenuRef.current && !mobileMenuRef.current.contains(event.target);
+
+      if (isOutsideDropdown && isOutsideMobileMenu) {
         setIsOpen(false);
+      }
     };
-    if (isOpen) document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+
+    if (isOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+      document.addEventListener("touchstart", handleClickOutside); // Menangkap sentuhan layar HP
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
+    };
   }, [isOpen]);
 
   const handleToggle = (option) => {
@@ -69,14 +84,15 @@ const FilterDropdown = ({
       ? selected.filter((item) => item !== option)
       : [...selected, option];
     onChange(newSelected);
-    setTimeout(() => setIsOpen(false), 150);
+
+    // Memberikan jeda yang cukup agar animasi klik terlihat di HP
+    setTimeout(() => setIsOpen(false), 200);
   };
 
   const handleSelectAll = () => {
     selected.length === options.length ? onChange([]) : onChange(options);
   };
 
-  // Isi menu yang akan dirender baik di Desktop maupun Mobile
   const MenuContent = () => (
     <>
       <div
@@ -175,17 +191,12 @@ const FilterDropdown = ({
 
       {isOpen && (
         <>
-          {/* ==============================================
-              DESKTOP VERSION (Tetap menggunakan Absolute)
-              ============================================== */}
+          {/* DESKTOP VERSION */}
           <div className="hidden md:flex absolute top-full left-0 mt-2 w-60 max-h-72 bg-white rounded-xl shadow-xl z-[99999] flex-col overflow-hidden border border-slate-100 animate-in fade-in zoom-in-95 duration-100">
             <MenuContent />
           </div>
 
-          {/* ==============================================
-              MOBILE VERSION (Menggunakan Portal ke Body)
-              Ini akan memaksa popup keluar dari jebakan overflow
-              ============================================== */}
+          {/* MOBILE VERSION DENGAN PORTAL */}
           {mounted &&
             createPortal(
               <div className="fixed inset-0 z-[100000] flex items-center justify-center md:hidden pointer-events-auto">
@@ -193,7 +204,12 @@ const FilterDropdown = ({
                   className="absolute inset-0 bg-black/60 backdrop-blur-[2px]"
                   onClick={() => setIsOpen(false)}
                 ></div>
-                <div className="relative w-[85vw] max-w-[300px] max-h-[65vh] bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200 border border-slate-100">
+
+                {/* 🔥 FIX: Menambahkan mobileMenuRef agar tidak langsung ketutup saat dipencet */}
+                <div
+                  ref={mobileMenuRef}
+                  className="relative w-[85vw] max-w-[300px] max-h-[65vh] bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200 border border-slate-100"
+                >
                   <MenuContent />
                   <div
                     className="p-3 bg-slate-50 border-t border-slate-100 text-center text-xs font-bold text-blue-600 active:bg-slate-100 cursor-pointer"
@@ -367,8 +383,7 @@ export default function Home() {
         className="snap-start bg-[#f1f5f9] px-3 md:px-5 pt-[80px] md:pt-[90px] pb-4 z-20 relative flex flex-col gap-3 md:gap-4"
         style={{ height: "100dvh" }}
       >
-        {/* Kontainer Filter Tetap Bisa Scroll ke Samping di HP */}
-        <div className="flex flex-nowrap md:flex-wrap overflow-x-auto md:overflow-visible gap-2 md:gap-3 w-full shrink-0 relative z-[10] pb-2 [&::-webkit-scrollbar]:hidden">
+        <div className="flex flex-nowrap md:flex-wrap overflow-x-auto md:overflow-visible gap-2 md:gap-3 w-full shrink-0 relative z-[99999] pb-2 [&::-webkit-scrollbar]:hidden">
           <FilterDropdown
             title="DEPARTEMENT"
             options={DEPT_OPTIONS}
@@ -411,15 +426,15 @@ export default function Home() {
           />
         </div>
 
-        <div className="flex-1 w-full flex flex-col lg:flex-row gap-3 md:gap-4 min-h-0 overflow-y-auto lg:overflow-hidden pb-10 lg:pb-0 relative z-0">
+        <div className="flex-1 w-full flex flex-col lg:flex-row gap-3 md:gap-4 min-h-0 overflow-y-auto lg:overflow-hidden pb-10 lg:pb-0 relative z-10">
           <div className="w-full lg:w-[30%] lg:min-w-[280px] lg:max-w-[380px] shrink-0 flex flex-col min-h-[600px] lg:min-h-0">
             <MandaysSummary filters={filters} />
           </div>
           <div className="flex-1 w-full flex flex-col gap-3 md:gap-4 min-w-0">
-            <div className="flex-1 flex flex-col min-h-0 relative z-0">
+            <div className="flex-1 flex flex-col min-h-0 relative z-30">
               <TrainingAnalytics filters={filters} />
             </div>
-            <div className="h-[250px] lg:h-[35%] lg:min-h-[180px] shrink-0 relative z-0">
+            <div className="h-[250px] lg:h-[35%] lg:min-h-[180px] shrink-0 relative z-20">
               <UpcomingTrainingTable />
             </div>
           </div>
