@@ -18,23 +18,20 @@ export default function Header({
 
   return (
     <header className="fixed top-0 left-0 w-full z-[9990] h-[60px] md:h-[70px] flex items-center justify-between px-6 md:px-10">
-      {/* 🔥 FIX: Layer Background Terpisah Agar Animasi 100% Smooth */}
-      {/* Layer ini murni hanya untuk transisi warna, shadow, dan blur */}
+      {/* 🔥 FIX 1: Trik GPU Acceleration. Background selalu biru & blur, tapi kita atur OPACITY-nya saja. 
+          Durasi diturunkan ke 400ms (duration-400) agar responsif dan tidak terasa delay! */}
       <div
-        className={`absolute inset-0 transition-all duration-700 ease-in-out pointer-events-none ${
-          isHome
-            ? "bg-[#1e3a8a]/0 border-b border-transparent shadow-none backdrop-blur-none"
-            : "bg-[#1e3a8a] border-b border-blue-800 shadow-lg shadow-blue-900/40 backdrop-blur-md"
+        className={`absolute inset-0 bg-[#1e3a8a] border-b border-blue-800 shadow-lg shadow-blue-900/40 backdrop-blur-md transition-opacity duration-500 ease-out pointer-events-none ${
+          isHome ? "opacity-0" : "opacity-100"
         }`}
       ></div>
 
       {/* ================= KIRI: LOGO & JUDUL PAGE ================= */}
-      {/* Tambahkan relative z-10 agar konten selalu di atas background */}
       <div className="relative z-10 flex items-center gap-4 md:gap-6">
         <img
-          src="/filtrona-logo-color.png"
+          src="/filtrona-logo.png"
           alt="Filtrona"
-          className={`h-5 md:h-6 object-contain transition-all duration-700 ease-in-out ${
+          className={`h-5 md:h-6 object-contain transition-all duration-500 ease-out ${
             isHome ? "brightness-0 invert opacity-90" : "brightness-100"
           }`}
           onError={(e) => {
@@ -43,32 +40,44 @@ export default function Header({
           }}
         />
 
-        {!isHome && (
-          <>
-            <div className="h-6 w-[1px] bg-white/20 hidden md:block"></div>
-            <h1 className="text-white font-black text-xs md:text-sm uppercase tracking-[0.2em] truncate max-w-[150px] md:max-w-none opacity-90 animate-in fade-in slide-in-from-left-4 duration-500">
-              {pageTitles[activePage] || ""}
-            </h1>
-          </>
-        )}
+        {/* 🔥 FIX 2: Teks tidak langsung dihapus, tapi dibuat memudar (fade-out) bersama background */}
+        <div
+          className={`flex items-center gap-4 md:gap-6 transition-all duration-500 ease-out ${
+            isHome
+              ? "opacity-0 -translate-x-4 pointer-events-none absolute left-full"
+              : "opacity-100 translate-x-0 relative left-auto"
+          }`}
+        >
+          <div className="h-6 w-[1px] bg-white/20 hidden md:block"></div>
+          <h1 className="text-white font-black text-xs md:text-sm uppercase tracking-[0.2em] truncate max-w-[150px] md:max-w-none opacity-90">
+            {pageTitles[activePage] || "Corporate Training Overview"}
+          </h1>
+        </div>
       </div>
 
       {/* ================= KANAN: TOMBOL AKSI ================= */}
       <div className="relative z-10 flex items-center gap-5 md:gap-8">
-        {!isHome && (
+        {/* Tombol Reset juga dibuat memudar halus */}
+        <div
+          className={`transition-opacity duration-500 ease-out flex items-center ${
+            isHome
+              ? "opacity-0 pointer-events-none absolute right-full"
+              : "opacity-100 relative right-auto"
+          }`}
+        >
           <button
             onClick={resetFilters}
-            className="flex items-center gap-2 text-white/70 hover:text-white transition-all group animate-in fade-in duration-500"
+            className="flex items-center gap-2 text-white/70 hover:text-white transition-all group"
           >
             <RotateCcw
               size={15}
-              className="group-hover:-rotate-180 transition duration-700 ease-out"
+              className="group-hover:-rotate-180 transition duration-500 ease-out"
             />
             <span className="text-[10px] md:text-[11px] font-bold uppercase tracking-widest hidden md:block mt-0.5">
               Reset Filter
             </span>
           </button>
-        )}
+        </div>
 
         <button
           onClick={() => setMobileOpen(true)}
