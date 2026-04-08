@@ -40,7 +40,7 @@ const MONTH_OPTIONS = [
 ];
 
 // ==========================================
-// KOMPONEN: FILTER DROPDOWN DENGAN PORTAL
+// KOMPONEN: FILTER DROPDOWN PREMIUM (+ PORTAL & ICON)
 // ==========================================
 const FilterDropdown = ({
   title,
@@ -58,6 +58,7 @@ const FilterDropdown = ({
   useEffect(() => {
     setMounted(true);
     const handleClickOutside = (event) => {
+      // Deteksi klik luar hanya berlaku di layar Desktop
       if (
         window.innerWidth >= 768 &&
         dropdownRef.current &&
@@ -67,8 +68,12 @@ const FilterDropdown = ({
       }
     };
 
-    if (isOpen) document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    if (isOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
   }, [isOpen]);
 
   const handleToggle = (e, option) => {
@@ -77,7 +82,7 @@ const FilterDropdown = ({
       ? selected.filter((item) => item !== option)
       : [...selected, option];
     onChange(newSelected);
-    setTimeout(() => setIsOpen(false), 200);
+    setTimeout(() => setIsOpen(false), 200); // Delay agar user sadar sudah terklik
   };
 
   const handleSelectAll = (e) => {
@@ -185,9 +190,12 @@ const FilterDropdown = ({
 
       {isOpen && (
         <>
+          {/* DESKTOP (Muncul di bawah tombol) */}
           <div className="hidden md:flex absolute top-full left-0 mt-2 w-60 max-h-72 bg-white rounded-xl shadow-xl z-[99999] flex-col overflow-hidden border border-slate-100 animate-in fade-in zoom-in-95 duration-100">
             <MenuContent />
           </div>
+
+          {/* MOBILE (Menggunakan Portal agar melayang di depan layar) */}
           {mounted &&
             createPortal(
               <div className="fixed inset-0 z-[100000] flex items-center justify-center md:hidden pointer-events-auto">
@@ -219,6 +227,9 @@ const FilterDropdown = ({
   );
 };
 
+// ==========================================
+// KOMPONEN: TABEL UPCOMING TRAINING
+// ==========================================
 const UpcomingTrainingTable = () => (
   <div className="bg-white rounded-2xl border border-slate-300 shadow-md p-4 flex flex-col h-full min-h-0 overflow-hidden">
     <div className="flex items-center gap-2 mb-3 shrink-0">
@@ -270,6 +281,9 @@ const UpcomingTrainingTable = () => (
   </div>
 );
 
+// ==========================================
+// MAIN COMPONENT (PAGE)
+// ==========================================
 export default function Home() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [activePage, setActivePage] = useState("home");
@@ -294,8 +308,7 @@ export default function Home() {
       month: [],
     });
 
-  // 🔥 FIX 1: Memaksa browser HP mereset posisi scroll ke titik 0 saat baru dimuat
-  // Ini mencegah bug di mana browser diam-diam scroll beberapa pixel ke bawah
+  // Memaksa browser HP mereset posisi scroll ke titik 0 saat baru dimuat (Anti Garis Putih)
   useEffect(() => {
     const container = document.getElementById("main-scroll");
     if (container) {
@@ -334,7 +347,7 @@ export default function Home() {
       className="w-full overflow-y-auto snap-y snap-mandatory scroll-smooth relative overscroll-none bg-[#1e3a8a] text-slate-800"
       style={{ height: "100dvh" }}
     >
-      {/* 🔥 FIX 2: Mengubah h-[1px] menjadi h-0 agar tidak ada celah sama sekali */}
+      {/* Sentinel h-0 agar tidak ada celah sama sekali */}
       <div
         id="top-sentinel"
         className="absolute top-0 left-0 w-full h-0 pointer-events-none z-0"
@@ -395,6 +408,7 @@ export default function Home() {
         className="snap-start bg-[#f1f5f9] px-3 md:px-5 pt-[80px] md:pt-[90px] pb-4 z-20 relative flex flex-col gap-3 md:gap-4"
         style={{ height: "100dvh" }}
       >
+        {/* BAR FILTER - Overflow visible agar tidak motong dropdown, Icon SVG ditambahkan */}
         <div className="flex flex-nowrap md:flex-wrap overflow-x-auto md:overflow-visible gap-2 md:gap-3 w-full shrink-0 relative z-[99999] pb-2 [&::-webkit-scrollbar]:hidden">
           <FilterDropdown
             title="DEPARTEMENT"
@@ -510,6 +524,7 @@ export default function Home() {
           <TrainingPlan filters={filters} />
         </div>
       </section>
+
       <section
         id="training-calendar"
         className="snap-start bg-[#f1f5f9] pt-[80px] md:pt-[90px] pb-4 px-3 md:px-5 overflow-hidden z-20 relative"
