@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom"; // 🔥 FIX: Import createPortal untuk memecahkan masalah Z-Index di Mobile
 import Header from "./components/layout/header";
 import Sidebar from "./components/layout/sidebar";
 import TrainingAnalytics from "./components/layout/traininganalytics";
@@ -38,6 +39,9 @@ const MONTH_OPTIONS = [
   "December",
 ];
 
+// ==========================================
+// KOMPONEN: FILTER DROPDOWN DENGAN PORTAL
+// ==========================================
 const FilterDropdown = ({
   title,
   options,
@@ -47,9 +51,11 @@ const FilterDropdown = ({
   menuColorClass,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [mounted, setMounted] = useState(false); // Untuk menghindari error hydration di Next.js
   const dropdownRef = useRef(null);
 
   useEffect(() => {
+    setMounted(true);
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target))
         setIsOpen(false);
@@ -70,11 +76,91 @@ const FilterDropdown = ({
     selected.length === options.length ? onChange([]) : onChange(options);
   };
 
+  // Isi menu yang akan dirender baik di Desktop maupun Mobile
+  const MenuContent = () => (
+    <>
+      <div
+        className={`p-3 md:p-3 ${menuColorClass} text-white cursor-pointer flex items-center justify-between text-[11px] md:text-xs font-bold sticky top-0 shrink-0 shadow-sm`}
+        onClick={handleSelectAll}
+      >
+        <div className="flex items-center gap-3">
+          <div
+            className={`w-4 h-4 rounded border-2 border-white flex items-center justify-center transition-colors ${selected.length === options.length && options.length > 0 ? "bg-white" : "bg-transparent"}`}
+          >
+            {selected.length === options.length && options.length > 0 && (
+              <svg
+                className="w-3 h-3 text-black"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="4"
+                  d="M5 13l4 4L19 7"
+                />
+              </svg>
+            )}
+          </div>
+          <span className="tracking-widest uppercase">Select All</span>
+        </div>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            setIsOpen(false);
+          }}
+          className="md:hidden p-1 text-white font-bold"
+        >
+          ✕
+        </button>
+      </div>
+      <div className="overflow-y-auto flex-1 py-1 custom-scrollbar bg-white">
+        {options.map((opt) => {
+          const isSelected = selected.includes(opt);
+          return (
+            <div
+              key={opt}
+              className={`group p-3 md:p-2.5 mx-1 my-0.5 rounded-lg cursor-pointer flex items-center gap-3 transition-all ${isSelected ? "bg-blue-50" : "hover:bg-slate-100"}`}
+              onClick={() => handleToggle(opt)}
+            >
+              <div
+                className={`w-4 h-4 rounded-md border-2 transition-all flex items-center justify-center ${isSelected ? "bg-blue-600 border-blue-600 shadow-sm" : "border-slate-300 bg-white"}`}
+              >
+                {isSelected && (
+                  <svg
+                    className="w-2.5 h-2.5 text-white"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="4"
+                      d="M5 13l4 4L19 7"
+                    />
+                  </svg>
+                )}
+              </div>
+              <span
+                className={`text-[11px] md:text-xs font-medium transition-colors ${isSelected ? "text-blue-800 font-bold" : "text-slate-600"}`}
+              >
+                {opt}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </>
+  );
+
   return (
     <div
       ref={dropdownRef}
       className={`relative flex-none w-[140px] lg:flex-1 lg:w-auto ${isOpen ? "z-[99999]" : "z-10"}`}
     >
+      {/* Tombol Utama */}
       <div
         onClick={() => setIsOpen(!isOpen)}
         className={`${colorClass} transition-all duration-200 text-white h-9 md:h-10 rounded-xl flex items-center justify-between px-3 md:px-4 font-bold text-[9px] md:text-[11px] cursor-pointer shadow-lg hover:brightness-110 active:scale-95`}
@@ -89,97 +175,45 @@ const FilterDropdown = ({
 
       {isOpen && (
         <>
-          <div
-            className="fixed inset-0 bg-black/50 backdrop-blur-[2px] z-[99998] md:hidden"
-            onClick={() => setIsOpen(false)}
-          ></div>
-          <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[85vw] max-w-[300px] max-h-[65vh] bg-white rounded-2xl shadow-2xl z-[99999] flex flex-col overflow-hidden md:absolute md:top-full md:left-0 md:mt-2 md:w-60 md:max-h-72 md:translate-x-0 md:translate-y-0 md:rounded-xl border border-slate-100">
-            <div
-              className={`p-3 md:p-3 ${menuColorClass} text-white cursor-pointer flex items-center justify-between text-[11px] md:text-xs font-bold sticky top-0 shrink-0 shadow-sm`}
-              onClick={handleSelectAll}
-            >
-              <div className="flex items-center gap-3">
-                <div
-                  className={`w-4 h-4 rounded border-2 border-white flex items-center justify-center transition-colors ${selected.length === options.length && options.length > 0 ? "bg-white" : "bg-transparent"}`}
-                >
-                  {selected.length === options.length && options.length > 0 && (
-                    <svg
-                      className="w-3 h-3 text-black"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="4"
-                        d="M5 13l4 4L19 7"
-                      />
-                    </svg>
-                  )}
-                </div>
-                <span className="tracking-widest uppercase">Select All</span>
-              </div>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setIsOpen(false);
-                }}
-                className="md:hidden p-1"
-              >
-                ✕
-              </button>
-            </div>
-            <div className="overflow-y-auto flex-1 py-1 custom-scrollbar bg-white">
-              {options.map((opt) => {
-                const isSelected = selected.includes(opt);
-                return (
-                  <div
-                    key={opt}
-                    className={`group p-3 md:p-2.5 mx-1 my-0.5 rounded-lg cursor-pointer flex items-center gap-3 transition-all ${isSelected ? "bg-blue-50" : "hover:bg-slate-100"}`}
-                    onClick={() => handleToggle(opt)}
-                  >
-                    <div
-                      className={`w-4 h-4 rounded-md border-2 transition-all flex items-center justify-center ${isSelected ? "bg-blue-600 border-blue-600 shadow-sm" : "border-slate-300 bg-white"}`}
-                    >
-                      {isSelected && (
-                        <svg
-                          className="w-2.5 h-2.5 text-white"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="4"
-                            d="M5 13l4 4L19 7"
-                          />
-                        </svg>
-                      )}
-                    </div>
-                    <span
-                      className={`text-[11px] md:text-xs font-medium transition-colors ${isSelected ? "text-blue-800 font-bold" : "text-slate-600"}`}
-                    >
-                      {opt}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-            <div
-              className="p-3 bg-slate-50 border-t border-slate-100 text-center text-xs font-bold text-blue-600 md:hidden active:bg-slate-100 cursor-pointer"
-              onClick={() => setIsOpen(false)}
-            >
-              CLOSE MENU
-            </div>
+          {/* ==============================================
+              DESKTOP VERSION (Tetap menggunakan Absolute)
+              ============================================== */}
+          <div className="hidden md:flex absolute top-full left-0 mt-2 w-60 max-h-72 bg-white rounded-xl shadow-xl z-[99999] flex-col overflow-hidden border border-slate-100 animate-in fade-in zoom-in-95 duration-100">
+            <MenuContent />
           </div>
+
+          {/* ==============================================
+              MOBILE VERSION (Menggunakan Portal ke Body)
+              Ini akan memaksa popup keluar dari jebakan overflow
+              ============================================== */}
+          {mounted &&
+            createPortal(
+              <div className="fixed inset-0 z-[100000] flex items-center justify-center md:hidden pointer-events-auto">
+                <div
+                  className="absolute inset-0 bg-black/60 backdrop-blur-[2px]"
+                  onClick={() => setIsOpen(false)}
+                ></div>
+                <div className="relative w-[85vw] max-w-[300px] max-h-[65vh] bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200 border border-slate-100">
+                  <MenuContent />
+                  <div
+                    className="p-3 bg-slate-50 border-t border-slate-100 text-center text-xs font-bold text-blue-600 active:bg-slate-100 cursor-pointer"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    CLOSE MENU
+                  </div>
+                </div>
+              </div>,
+              document.body,
+            )}
         </>
       )}
     </div>
   );
 };
 
+// ==========================================
+// KOMPONEN: TABEL UPCOMING TRAINING
+// ==========================================
 const UpcomingTrainingTable = () => (
   <div className="bg-white rounded-2xl border border-slate-300 shadow-md p-4 flex flex-col h-full min-h-0 overflow-hidden">
     <div className="flex items-center gap-2 mb-3 shrink-0">
@@ -232,6 +266,9 @@ const UpcomingTrainingTable = () => (
   </div>
 );
 
+// ==========================================
+// MAIN COMPONENT (PAGE)
+// ==========================================
 export default function Home() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [activePage, setActivePage] = useState("home");
@@ -330,8 +367,8 @@ export default function Home() {
         className="snap-start bg-[#f1f5f9] px-3 md:px-5 pt-[80px] md:pt-[90px] pb-4 z-20 relative flex flex-col gap-3 md:gap-4"
         style={{ height: "100dvh" }}
       >
-        {/* 🔥 FIX KRITIKAL: Memastikan md:overflow-visible dan md:flex-wrap agar Dropdown tidak terpotong atau terlempar ke belakang */}
-        <div className="flex flex-nowrap md:flex-wrap overflow-x-auto md:overflow-visible gap-2 md:gap-3 w-full shrink-0 relative z-[99999] pb-2 [&::-webkit-scrollbar]:hidden">
+        {/* Kontainer Filter Tetap Bisa Scroll ke Samping di HP */}
+        <div className="flex flex-nowrap md:flex-wrap overflow-x-auto md:overflow-visible gap-2 md:gap-3 w-full shrink-0 relative z-[10] pb-2 [&::-webkit-scrollbar]:hidden">
           <FilterDropdown
             title="DEPARTEMENT"
             options={DEPT_OPTIONS}
@@ -374,16 +411,15 @@ export default function Home() {
           />
         </div>
 
-        {/* KONTEN BAWAH DENGAN Z-INDEX LEBIH RENDAH */}
-        <div className="flex-1 w-full flex flex-col lg:flex-row gap-3 md:gap-4 min-h-0 overflow-y-auto lg:overflow-hidden pb-10 lg:pb-0 relative z-10">
+        <div className="flex-1 w-full flex flex-col lg:flex-row gap-3 md:gap-4 min-h-0 overflow-y-auto lg:overflow-hidden pb-10 lg:pb-0 relative z-0">
           <div className="w-full lg:w-[30%] lg:min-w-[280px] lg:max-w-[380px] shrink-0 flex flex-col min-h-[600px] lg:min-h-0">
             <MandaysSummary filters={filters} />
           </div>
           <div className="flex-1 w-full flex flex-col gap-3 md:gap-4 min-w-0">
-            <div className="flex-1 flex flex-col min-h-0 relative z-30">
+            <div className="flex-1 flex flex-col min-h-0 relative z-0">
               <TrainingAnalytics filters={filters} />
             </div>
-            <div className="h-[250px] lg:h-[35%] lg:min-h-[180px] shrink-0 relative z-20">
+            <div className="h-[250px] lg:h-[35%] lg:min-h-[180px] shrink-0 relative z-0">
               <UpcomingTrainingTable />
             </div>
           </div>

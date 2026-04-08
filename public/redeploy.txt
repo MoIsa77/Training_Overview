@@ -1,0 +1,5 @@
+git add .
+
+git commit -m "Catatan perubahan kamu"
+
+git push origin main
