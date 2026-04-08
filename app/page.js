@@ -40,7 +40,7 @@ const MONTH_OPTIONS = [
 ];
 
 // ==========================================
-// KOMPONEN: FILTER DROPDOWN PREMIUM (+ PORTAL & ICON)
+// KOMPONEN: FILTER DROPDOWN PREMIUM
 // ==========================================
 const FilterDropdown = ({
   title,
@@ -58,7 +58,6 @@ const FilterDropdown = ({
   useEffect(() => {
     setMounted(true);
     const handleClickOutside = (event) => {
-      // Deteksi klik luar hanya berlaku di layar Desktop
       if (
         window.innerWidth >= 768 &&
         dropdownRef.current &&
@@ -67,13 +66,8 @@ const FilterDropdown = ({
         setIsOpen(false);
       }
     };
-
-    if (isOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
-    }
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
+    if (isOpen) document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isOpen]);
 
   const handleToggle = (e, option) => {
@@ -82,7 +76,7 @@ const FilterDropdown = ({
       ? selected.filter((item) => item !== option)
       : [...selected, option];
     onChange(newSelected);
-    setTimeout(() => setIsOpen(false), 200); // Delay agar user sadar sudah terklik
+    setTimeout(() => setIsOpen(false), 200);
   };
 
   const handleSelectAll = (e) => {
@@ -187,15 +181,11 @@ const FilterDropdown = ({
           ▼
         </span>
       </div>
-
       {isOpen && (
         <>
-          {/* DESKTOP (Muncul di bawah tombol) */}
           <div className="hidden md:flex absolute top-full left-0 mt-2 w-60 max-h-72 bg-white rounded-xl shadow-xl z-[99999] flex-col overflow-hidden border border-slate-100 animate-in fade-in zoom-in-95 duration-100">
             <MenuContent />
           </div>
-
-          {/* MOBILE (Menggunakan Portal agar melayang di depan layar) */}
           {mounted &&
             createPortal(
               <div className="fixed inset-0 z-[100000] flex items-center justify-center md:hidden pointer-events-auto">
@@ -227,9 +217,6 @@ const FilterDropdown = ({
   );
 };
 
-// ==========================================
-// KOMPONEN: TABEL UPCOMING TRAINING
-// ==========================================
 const UpcomingTrainingTable = () => (
   <div className="bg-white rounded-2xl border border-slate-300 shadow-md p-4 flex flex-col h-full min-h-0 overflow-hidden">
     <div className="flex items-center gap-2 mb-3 shrink-0">
@@ -288,7 +275,6 @@ export default function Home() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [activePage, setActivePage] = useState("home");
   const [isHome, setIsHome] = useState(true);
-
   const [filters, setFilters] = useState({
     department: [],
     trainingType: [],
@@ -308,46 +294,61 @@ export default function Home() {
       month: [],
     });
 
-  // Memaksa browser HP mereset posisi scroll ke titik 0 saat baru dimuat (Anti Garis Putih)
+  // 🔥 TEKNOLOGI SCROLL TINGKAT DEWA (Intersection Observer + RequestAnimationFrame)
+  // Ini akan membuang semua lag saat scroll manual!
   useEffect(() => {
-    const container = document.getElementById("main-scroll");
-    if (container) {
-      container.scrollTop = 0;
-    }
-    setIsHome(true);
+    const scrollContainer = document.getElementById("main-scroll");
+    if (!scrollContainer) return;
+
+    // 1. Radar untuk Menu Sidebar (Sangat ringan)
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setActivePage(entry.target.id);
+          }
+        });
+      },
+      { root: scrollContainer, threshold: 0.5 }, // Trigger saat 50% layar tertutup section
+    );
+
+    document
+      .querySelectorAll("section[id]")
+      .forEach((section) => observer.observe(section));
+
+    // 2. Sensor khusus Header Transparan (Berjalan di GPU)
+    let ticking = false;
+    const handleScroll = () => {
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          setIsHome(scrollContainer.scrollTop < 50);
+          ticking = false;
+        });
+        ticking = true;
+      }
+    };
+
+    scrollContainer.addEventListener("scroll", handleScroll, { passive: true });
+    scrollContainer.scrollTop = 0; // Anti Garis Putih di awal
+
+    return () => {
+      observer.disconnect();
+      scrollContainer.removeEventListener("scroll", handleScroll);
+    };
   }, []);
-
-  const handleScroll = (e) => {
-    const { scrollTop, clientHeight } = e.target;
-    setIsHome(scrollTop < 10);
-
-    if (scrollTop < clientHeight / 2) {
-      if (activePage !== "home") setActivePage("home");
-    } else if (scrollTop < clientHeight * 1.5) {
-      if (activePage !== "mandays") setActivePage("mandays");
-    } else if (scrollTop < clientHeight * 2.5) {
-      if (activePage !== "training-plan") setActivePage("training-plan");
-    } else {
-      if (activePage !== "training-calendar")
-        setActivePage("training-calendar");
-    }
-  };
 
   const scrollToSection = (id) => {
     const el = document.getElementById(id);
-    if (el) {
-      el.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
   return (
+    // 🔥 FIX: Dihapus "snap-y snap-mandatory" agar jempol/mouse bisa scroll bebas tanpa dilawan browser!
     <div
       id="main-scroll"
-      onScroll={handleScroll}
-      className="w-full overflow-y-auto snap-y snap-mandatory scroll-smooth relative overscroll-none bg-[#1e3a8a] text-slate-800"
+      className="w-full overflow-y-auto scroll-smooth relative overscroll-none bg-[#1e3a8a] text-slate-800"
       style={{ height: "100dvh" }}
     >
-      {/* Sentinel h-0 agar tidak ada celah sama sekali */}
       <div
         id="top-sentinel"
         className="absolute top-0 left-0 w-full h-0 pointer-events-none z-0"
@@ -366,10 +367,10 @@ export default function Home() {
         setActivePage={setActivePage}
       />
 
-      {/* HOME */}
+      {/* 🔥 FIX: Dihapus class "snap-start" di semua section di bawah ini */}
       <section
         id="home"
-        className="relative w-full snap-start flex flex-col items-center justify-center bg-cover bg-center z-10"
+        className="relative w-full flex flex-col items-center justify-center bg-cover bg-center z-10"
         style={{ height: "100dvh", backgroundImage: "url('/bg_H.png')" }}
       >
         <div className="absolute inset-0 bg-black/40 pointer-events-none" />
@@ -402,13 +403,11 @@ export default function Home() {
         </div>
       </section>
 
-      {/* DASHBOARD OVERVIEW */}
       <section
         id="mandays"
-        className="snap-start bg-[#f1f5f9] px-3 md:px-5 pt-[80px] md:pt-[90px] pb-4 z-20 relative flex flex-col gap-3 md:gap-4"
+        className="bg-[#f1f5f9] px-3 md:px-5 pt-[80px] md:pt-[90px] pb-4 z-20 relative flex flex-col gap-3 md:gap-4"
         style={{ height: "100dvh" }}
       >
-        {/* BAR FILTER - Overflow visible agar tidak motong dropdown, Icon SVG ditambahkan */}
         <div className="flex flex-nowrap md:flex-wrap overflow-x-auto md:overflow-visible gap-2 md:gap-3 w-full shrink-0 relative z-[99999] pb-2 [&::-webkit-scrollbar]:hidden">
           <FilterDropdown
             title="DEPARTEMENT"
@@ -498,7 +497,6 @@ export default function Home() {
             }
           />
         </div>
-
         <div className="flex-1 w-full flex flex-col lg:flex-row gap-3 md:gap-4 min-h-0 overflow-y-auto lg:overflow-hidden pb-10 lg:pb-0 relative z-10">
           <div className="w-full lg:w-[30%] lg:min-w-[280px] lg:max-w-[380px] shrink-0 flex flex-col min-h-[600px] lg:min-h-0">
             <MandaysSummary filters={filters} />
@@ -514,10 +512,9 @@ export default function Home() {
         </div>
       </section>
 
-      {/* PLAN & CALENDAR */}
       <section
         id="training-plan"
-        className="snap-start bg-[#f1f5f9] pt-[80px] md:pt-[90px] pb-4 px-3 md:px-5 overflow-hidden z-20 relative"
+        className="bg-[#f1f5f9] pt-[80px] md:pt-[90px] pb-4 px-3 md:px-5 overflow-hidden z-20 relative"
         style={{ height: "100dvh" }}
       >
         <div className="h-full w-full">
@@ -526,8 +523,38 @@ export default function Home() {
       </section>
 
       <section
+        id="matrix-competency"
+        className="bg-[#f1f5f9] pt-[80px] md:pt-[90px] pb-4 px-3 md:px-5 overflow-hidden z-20 relative flex items-center justify-center"
+        style={{ height: "100dvh" }}
+      >
+        <div className="text-center bg-white p-10 rounded-3xl shadow-xl border border-slate-200">
+          <div className="flex justify-center mb-4">
+            <svg
+              className="w-16 h-16 text-red-500 animate-pulse"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"
+              ></path>
+            </svg>
+          </div>
+          <h1 className="text-2xl md:text-4xl font-black text-slate-800">
+            MATRIX COMPETENCY
+          </h1>
+          <p className="text-slate-400 mt-2 font-bold uppercase tracking-widest text-xs md:text-sm">
+            Under Construction
+          </p>
+        </div>
+      </section>
+
+      <section
         id="training-calendar"
-        className="snap-start bg-[#f1f5f9] pt-[80px] md:pt-[90px] pb-4 px-3 md:px-5 overflow-hidden z-20 relative"
+        className="bg-[#f1f5f9] pt-[80px] md:pt-[90px] pb-4 px-3 md:px-5 overflow-hidden z-20 relative"
         style={{ height: "100dvh" }}
       >
         <div className="h-full w-full">
