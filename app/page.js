@@ -53,43 +53,42 @@ const FilterDropdown = ({
   const [isOpen, setIsOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const dropdownRef = useRef(null);
-  const mobileMenuRef = useRef(null); // 🔥 Sensor tambahan khusus untuk menu portal di HP
 
   useEffect(() => {
     setMounted(true);
     const handleClickOutside = (event) => {
-      // 🔥 FIX: Mengecek apakah klik terjadi di luar tombol DAN di luar menu portal
-      const isOutsideDropdown =
-        dropdownRef.current && !dropdownRef.current.contains(event.target);
-      const isOutsideMobileMenu =
-        mobileMenuRef.current && !mobileMenuRef.current.contains(event.target);
-
-      if (isOutsideDropdown && isOutsideMobileMenu) {
+      // 🔥 FIX: Hanya terapkan deteksi klik luar ini di Desktop.
+      // Di Mobile, menu hanya akan tertutup lewat tombol CLOSE atau klik backdrop gelap.
+      if (
+        window.innerWidth >= 768 &&
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target)
+      ) {
         setIsOpen(false);
       }
     };
 
     if (isOpen) {
       document.addEventListener("mousedown", handleClickOutside);
-      document.addEventListener("touchstart", handleClickOutside); // Menangkap sentuhan layar HP
     }
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
-      document.removeEventListener("touchstart", handleClickOutside);
     };
   }, [isOpen]);
 
-  const handleToggle = (option) => {
+  const handleToggle = (e, option) => {
+    e.stopPropagation(); // Mencegah klik tembus
     let newSelected = selected.includes(option)
       ? selected.filter((item) => item !== option)
       : [...selected, option];
     onChange(newSelected);
 
-    // Memberikan jeda yang cukup agar animasi klik terlihat di HP
+    // Delay sedikit agar user sadar pilihannya sudah ter-klik
     setTimeout(() => setIsOpen(false), 200);
   };
 
-  const handleSelectAll = () => {
+  const handleSelectAll = (e) => {
+    e.stopPropagation();
     selected.length === options.length ? onChange([]) : onChange(options);
   };
 
@@ -99,7 +98,7 @@ const FilterDropdown = ({
         className={`p-3 md:p-3 ${menuColorClass} text-white cursor-pointer flex items-center justify-between text-[11px] md:text-xs font-bold sticky top-0 shrink-0 shadow-sm`}
         onClick={handleSelectAll}
       >
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 pointer-events-none">
           <div
             className={`w-4 h-4 rounded border-2 border-white flex items-center justify-center transition-colors ${selected.length === options.length && options.length > 0 ? "bg-white" : "bg-transparent"}`}
           >
@@ -126,7 +125,7 @@ const FilterDropdown = ({
             e.stopPropagation();
             setIsOpen(false);
           }}
-          className="md:hidden p-1 text-white font-bold"
+          className="md:hidden p-1 text-white font-bold px-2 border border-white/30 rounded"
         >
           ✕
         </button>
@@ -138,10 +137,10 @@ const FilterDropdown = ({
             <div
               key={opt}
               className={`group p-3 md:p-2.5 mx-1 my-0.5 rounded-lg cursor-pointer flex items-center gap-3 transition-all ${isSelected ? "bg-blue-50" : "hover:bg-slate-100"}`}
-              onClick={() => handleToggle(opt)}
+              onClick={(e) => handleToggle(e, opt)}
             >
               <div
-                className={`w-4 h-4 rounded-md border-2 transition-all flex items-center justify-center ${isSelected ? "bg-blue-600 border-blue-600 shadow-sm" : "border-slate-300 bg-white"}`}
+                className={`w-4 h-4 rounded-md border-2 transition-all flex items-center justify-center pointer-events-none ${isSelected ? "bg-blue-600 border-blue-600 shadow-sm" : "border-slate-300 bg-white"}`}
               >
                 {isSelected && (
                   <svg
@@ -160,7 +159,7 @@ const FilterDropdown = ({
                 )}
               </div>
               <span
-                className={`text-[11px] md:text-xs font-medium transition-colors ${isSelected ? "text-blue-800 font-bold" : "text-slate-600"}`}
+                className={`text-[11px] md:text-xs font-medium transition-colors pointer-events-none ${isSelected ? "text-blue-800 font-bold" : "text-slate-600"}`}
               >
                 {opt}
               </span>
@@ -176,7 +175,6 @@ const FilterDropdown = ({
       ref={dropdownRef}
       className={`relative flex-none w-[140px] lg:flex-1 lg:w-auto ${isOpen ? "z-[99999]" : "z-10"}`}
     >
-      {/* Tombol Utama */}
       <div
         onClick={() => setIsOpen(!isOpen)}
         className={`${colorClass} transition-all duration-200 text-white h-9 md:h-10 rounded-xl flex items-center justify-between px-3 md:px-4 font-bold text-[9px] md:text-[11px] cursor-pointer shadow-lg hover:brightness-110 active:scale-95`}
@@ -191,29 +189,32 @@ const FilterDropdown = ({
 
       {isOpen && (
         <>
-          {/* DESKTOP VERSION */}
+          {/* DESKTOP */}
           <div className="hidden md:flex absolute top-full left-0 mt-2 w-60 max-h-72 bg-white rounded-xl shadow-xl z-[99999] flex-col overflow-hidden border border-slate-100 animate-in fade-in zoom-in-95 duration-100">
             <MenuContent />
           </div>
 
-          {/* MOBILE VERSION DENGAN PORTAL */}
+          {/* MOBILE (Bebas dari masalah Scroll/Touch) */}
           {mounted &&
             createPortal(
               <div className="fixed inset-0 z-[100000] flex items-center justify-center md:hidden pointer-events-auto">
+                {/* Backdrop untuk nutup menu */}
                 <div
                   className="absolute inset-0 bg-black/60 backdrop-blur-[2px]"
-                  onClick={() => setIsOpen(false)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsOpen(false);
+                  }}
                 ></div>
 
-                {/* 🔥 FIX: Menambahkan mobileMenuRef agar tidak langsung ketutup saat dipencet */}
-                <div
-                  ref={mobileMenuRef}
-                  className="relative w-[85vw] max-w-[300px] max-h-[65vh] bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200 border border-slate-100"
-                >
+                <div className="relative w-[85vw] max-w-[300px] max-h-[65vh] bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200 border border-slate-100">
                   <MenuContent />
                   <div
-                    className="p-3 bg-slate-50 border-t border-slate-100 text-center text-xs font-bold text-blue-600 active:bg-slate-100 cursor-pointer"
-                    onClick={() => setIsOpen(false)}
+                    className="p-3.5 bg-slate-50 border-t border-slate-100 text-center text-xs font-bold text-blue-600 active:bg-slate-200 cursor-pointer transition"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsOpen(false);
+                    }}
                   >
                     CLOSE MENU
                   </div>
@@ -227,9 +228,6 @@ const FilterDropdown = ({
   );
 };
 
-// ==========================================
-// KOMPONEN: TABEL UPCOMING TRAINING
-// ==========================================
 const UpcomingTrainingTable = () => (
   <div className="bg-white rounded-2xl border border-slate-300 shadow-md p-4 flex flex-col h-full min-h-0 overflow-hidden">
     <div className="flex items-center gap-2 mb-3 shrink-0">
@@ -282,9 +280,6 @@ const UpcomingTrainingTable = () => (
   </div>
 );
 
-// ==========================================
-// MAIN COMPONENT (PAGE)
-// ==========================================
 export default function Home() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [activePage, setActivePage] = useState("home");
@@ -325,11 +320,12 @@ export default function Home() {
     }
   };
 
+  // 🔥 FIX: Logika Scroll yang akurat menggunakan scrollIntoView
   const scrollToSection = (id) => {
-    const container = document.getElementById("main-scroll");
     const el = document.getElementById(id);
-    if (container && el)
-      container.scrollTo({ top: el.offsetTop, behavior: "smooth" });
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
   };
 
   return (
@@ -364,15 +360,37 @@ export default function Home() {
         style={{ height: "100dvh", backgroundImage: "url('/bg_H.png')" }}
       >
         <div className="absolute inset-0 bg-black/40 pointer-events-none" />
-        <div className="relative z-40 text-center max-w-2xl px-6 text-white pointer-events-auto">
-          <h1 className="text-4xl md:text-5xl font-bold mb-4 leading-tight uppercase">
+        <div className="relative z-40 text-center max-w-2xl px-6 text-white pointer-events-auto flex flex-col items-center">
+          <h1 className="text-4xl md:text-5xl font-bold mb-6 md:mb-8 leading-tight uppercase tracking-wide">
             CORPORATE TRAINING OVERVIEW
           </h1>
+
+          {/* 🔥 FIX: Tombol Watch Now dengan Animasi Premium & Berfungsi */}
           <button
             onClick={() => scrollToSection("mandays")}
-            className="px-6 py-3 border border-white rounded-full hover:bg-white hover:text-black transition duration-300 shadow-lg"
+            className="group relative inline-flex items-center justify-center gap-2 md:gap-3 px-8 md:px-10 py-3.5 md:py-4 bg-transparent border-2 border-white text-white rounded-full font-bold uppercase tracking-[0.2em] text-[10px] md:text-xs overflow-hidden transition-all hover:scale-105 active:scale-95 shadow-[0_0_20px_rgba(255,255,255,0.2)] hover:shadow-[0_0_30px_rgba(255,255,255,0.4)]"
           >
-            WATCH NOW ↓
+            {/* Background fill animasi saat hover */}
+            <div className="absolute inset-0 w-full h-full bg-white translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out z-0"></div>
+
+            <span className="relative z-10 group-hover:text-[#1e3a8a] transition-colors duration-300">
+              WATCH NOW
+            </span>
+
+            {/* Ikon panah yang memantul (bounce) */}
+            <svg
+              className="w-3.5 h-3.5 md:w-4 md:h-4 relative z-10 group-hover:text-[#1e3a8a] transition-colors duration-300 animate-bounce"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="3"
+                d="M19 14l-7 7m0 0l-7-7m7 7V3"
+              ></path>
+            </svg>
           </button>
         </div>
       </section>
