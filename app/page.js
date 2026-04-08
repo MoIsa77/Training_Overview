@@ -49,6 +49,7 @@ const FilterDropdown = ({
   onChange,
   colorClass,
   menuColorClass,
+  icon,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -57,8 +58,6 @@ const FilterDropdown = ({
   useEffect(() => {
     setMounted(true);
     const handleClickOutside = (event) => {
-      // 🔥 FIX: Hanya terapkan deteksi klik luar ini di Desktop.
-      // Di Mobile, menu hanya akan tertutup lewat tombol CLOSE atau klik backdrop gelap.
       if (
         window.innerWidth >= 768 &&
         dropdownRef.current &&
@@ -68,22 +67,16 @@ const FilterDropdown = ({
       }
     };
 
-    if (isOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
-    }
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
+    if (isOpen) document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isOpen]);
 
   const handleToggle = (e, option) => {
-    e.stopPropagation(); // Mencegah klik tembus
+    e.stopPropagation();
     let newSelected = selected.includes(option)
       ? selected.filter((item) => item !== option)
       : [...selected, option];
     onChange(newSelected);
-
-    // Delay sedikit agar user sadar pilihannya sudah ter-klik
     setTimeout(() => setIsOpen(false), 200);
   };
 
@@ -173,15 +166,18 @@ const FilterDropdown = ({
   return (
     <div
       ref={dropdownRef}
-      className={`relative flex-none w-[140px] lg:flex-1 lg:w-auto ${isOpen ? "z-[99999]" : "z-10"}`}
+      className={`relative flex-none w-[160px] md:w-[180px] lg:flex-1 lg:w-auto ${isOpen ? "z-[99999]" : "z-10"}`}
     >
       <div
         onClick={() => setIsOpen(!isOpen)}
-        className={`${colorClass} transition-all duration-200 text-white h-9 md:h-10 rounded-xl flex items-center justify-between px-3 md:px-4 font-bold text-[9px] md:text-[11px] cursor-pointer shadow-lg hover:brightness-110 active:scale-95`}
+        className={`${colorClass} transition-all duration-200 text-white rounded-xl flex items-center justify-between p-3 md:p-4 font-bold text-[10px] md:text-xs cursor-pointer shadow-md hover:brightness-110 active:scale-95`}
       >
-        <span className="truncate mr-1 uppercase tracking-wider">{title}</span>
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="uppercase tracking-wider truncate">{title}</span>
+          {icon && <div className="shrink-0">{icon}</div>}
+        </div>
         <span
-          className={`text-[9px] transition-transform duration-300 ${isOpen ? "rotate-180" : "rotate-0"}`}
+          className={`text-[10px] transition-transform duration-300 ml-2 shrink-0 ${isOpen ? "rotate-180" : "rotate-0"}`}
         >
           ▼
         </span>
@@ -189,16 +185,12 @@ const FilterDropdown = ({
 
       {isOpen && (
         <>
-          {/* DESKTOP */}
           <div className="hidden md:flex absolute top-full left-0 mt-2 w-60 max-h-72 bg-white rounded-xl shadow-xl z-[99999] flex-col overflow-hidden border border-slate-100 animate-in fade-in zoom-in-95 duration-100">
             <MenuContent />
           </div>
-
-          {/* MOBILE (Bebas dari masalah Scroll/Touch) */}
           {mounted &&
             createPortal(
               <div className="fixed inset-0 z-[100000] flex items-center justify-center md:hidden pointer-events-auto">
-                {/* Backdrop untuk nutup menu */}
                 <div
                   className="absolute inset-0 bg-black/60 backdrop-blur-[2px]"
                   onClick={(e) => {
@@ -206,7 +198,6 @@ const FilterDropdown = ({
                     setIsOpen(false);
                   }}
                 ></div>
-
                 <div className="relative w-[85vw] max-w-[300px] max-h-[65vh] bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200 border border-slate-100">
                   <MenuContent />
                   <div
@@ -240,7 +231,6 @@ const UpcomingTrainingTable = () => (
         <div className="w-2 h-2 rounded-full bg-red-500"></div>
       </div>
     </div>
-
     <div className="flex-1 overflow-y-auto rounded-xl border border-slate-100 custom-scrollbar">
       <table className="w-full text-[10px] md:text-[11px] text-left">
         <thead className="bg-[#8b5cf6] text-white sticky top-0 z-10 shadow-sm">
@@ -304,6 +294,16 @@ export default function Home() {
       month: [],
     });
 
+  // 🔥 FIX 1: Memaksa browser HP mereset posisi scroll ke titik 0 saat baru dimuat
+  // Ini mencegah bug di mana browser diam-diam scroll beberapa pixel ke bawah
+  useEffect(() => {
+    const container = document.getElementById("main-scroll");
+    if (container) {
+      container.scrollTop = 0;
+    }
+    setIsHome(true);
+  }, []);
+
   const handleScroll = (e) => {
     const { scrollTop, clientHeight } = e.target;
     setIsHome(scrollTop < 10);
@@ -320,7 +320,6 @@ export default function Home() {
     }
   };
 
-  // 🔥 FIX: Logika Scroll yang akurat menggunakan scrollIntoView
   const scrollToSection = (id) => {
     const el = document.getElementById(id);
     if (el) {
@@ -335,9 +334,10 @@ export default function Home() {
       className="w-full overflow-y-auto snap-y snap-mandatory scroll-smooth relative overscroll-none bg-[#1e3a8a] text-slate-800"
       style={{ height: "100dvh" }}
     >
+      {/* 🔥 FIX 2: Mengubah h-[1px] menjadi h-0 agar tidak ada celah sama sekali */}
       <div
         id="top-sentinel"
-        className="absolute top-0 left-0 w-full h-[1px] pointer-events-none z-0"
+        className="absolute top-0 left-0 w-full h-0 pointer-events-none z-0"
       ></div>
 
       <Header
@@ -364,20 +364,14 @@ export default function Home() {
           <h1 className="text-4xl md:text-5xl font-bold mb-6 md:mb-8 leading-tight uppercase tracking-wide">
             CORPORATE TRAINING OVERVIEW
           </h1>
-
-          {/* 🔥 FIX: Tombol Watch Now dengan Animasi Premium & Berfungsi */}
           <button
             onClick={() => scrollToSection("mandays")}
             className="group relative inline-flex items-center justify-center gap-2 md:gap-3 px-8 md:px-10 py-3.5 md:py-4 bg-transparent border-2 border-white text-white rounded-full font-bold uppercase tracking-[0.2em] text-[10px] md:text-xs overflow-hidden transition-all hover:scale-105 active:scale-95 shadow-[0_0_20px_rgba(255,255,255,0.2)] hover:shadow-[0_0_30px_rgba(255,255,255,0.4)]"
           >
-            {/* Background fill animasi saat hover */}
             <div className="absolute inset-0 w-full h-full bg-white translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out z-0"></div>
-
             <span className="relative z-10 group-hover:text-[#1e3a8a] transition-colors duration-300">
               WATCH NOW
             </span>
-
-            {/* Ikon panah yang memantul (bounce) */}
             <svg
               className="w-3.5 h-3.5 md:w-4 md:h-4 relative z-10 group-hover:text-[#1e3a8a] transition-colors duration-300 animate-bounce"
               fill="none"
@@ -409,6 +403,16 @@ export default function Home() {
             onChange={(val) => updateFilter("department", val)}
             colorClass="bg-[#0284c7] hover:bg-[#0369a1]"
             menuColorClass="bg-[#0284c7]"
+            icon={
+              <svg
+                className="w-4 h-4 md:w-5 md:h-5 opacity-90"
+                fill="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path d="M19 2H9c-1.103 0-2 .897-2 2v5.586l-4.707 4.707A1 1 0 0 0 2 15v6h6v-6h4v6h10V4c0-1.103-.897-2-2-2zm-8 18H4v-4.586l3-3L11 16.414V20zm8 0h-6v-6H7v-3.586l2-2V4h10v16z" />
+                <path d="M11 6h6v2h-6zm0 4h6v2h-6zm0 4h6v2h-6z" />
+              </svg>
+            }
           />
           <FilterDropdown
             title="TRAINING TYPE"
@@ -417,6 +421,15 @@ export default function Home() {
             onChange={(val) => updateFilter("trainingType", val)}
             colorClass="bg-[#65a30d] hover:bg-[#4d7c0f]"
             menuColorClass="bg-[#65a30d]"
+            icon={
+              <svg
+                className="w-4 h-4 md:w-5 md:h-5 opacity-90"
+                fill="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path d="M21 21H3V3h2v16h16v2zM7 10h4v8H7v-8zm6-4h4v12h-4V6z" />
+              </svg>
+            }
           />
           <FilterDropdown
             title="TRAINING CATEGORY"
@@ -425,6 +438,15 @@ export default function Home() {
             onChange={(val) => updateFilter("category", val)}
             colorClass="bg-[#dc2626] hover:bg-[#b91c1c]"
             menuColorClass="bg-[#dc2626]"
+            icon={
+              <svg
+                className="w-4 h-4 md:w-5 md:h-5 opacity-90"
+                fill="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path d="M20 6h-8l-2-2H4c-1.103 0-2 .897-2 2v12c0 1.103.897 2 2 2h16c1.103 0 2-.897 2-2V8c0-1.103-.897-2-2-2zm0 14H4V8h16v12z" />
+              </svg>
+            }
           />
           <FilterDropdown
             title="YEAR"
@@ -433,6 +455,15 @@ export default function Home() {
             onChange={(val) => updateFilter("year", val)}
             colorClass="bg-[#d97706] hover:bg-[#b45309]"
             menuColorClass="bg-[#d97706]"
+            icon={
+              <svg
+                className="w-4 h-4 md:w-5 md:h-5 opacity-90"
+                fill="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path d="M19 4h-2V2h-2v2H9V2H7v2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2V6c0-1.103-.897-2-2-2zm0 16H5V10h14v10zM5 8V6h14v2H5z" />
+              </svg>
+            }
           />
           <FilterDropdown
             title="MONTH"
@@ -441,6 +472,16 @@ export default function Home() {
             onChange={(val) => updateFilter("month", val)}
             colorClass="bg-[#7e22ce] hover:bg-[#6b21a8]"
             menuColorClass="bg-[#7e22ce]"
+            icon={
+              <svg
+                className="w-4 h-4 md:w-5 md:h-5 opacity-90"
+                fill="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path d="M7 11h2v2H7zm0 4h2v2H7zm4-4h2v2h-2zm0 4h2v2h-2zm4-4h2v2h-2zm0 4h2v2h-2z" />
+                <path d="M5 22h14c1.103 0 2-.897 2-2V6c0-1.103-.897-2-2-2h-2V2h-2v2H9V2H7v2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2zM19 8l.001 12H5V8h14z" />
+              </svg>
+            }
           />
         </div>
 
@@ -469,7 +510,6 @@ export default function Home() {
           <TrainingPlan filters={filters} />
         </div>
       </section>
-
       <section
         id="training-calendar"
         className="snap-start bg-[#f1f5f9] pt-[80px] md:pt-[90px] pb-4 px-3 md:px-5 overflow-hidden z-20 relative"
