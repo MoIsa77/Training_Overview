@@ -276,6 +276,7 @@ export default function Home() {
   const [activePage, setActivePage] = useState("home");
   const [isHome, setIsHome] = useState(true);
 
+  // 🔥 INI DIA KABEL PENGHUBUNGNYA (State Global)
   const [filters, setFilters] = useState({
     department: [],
     trainingType: [],
@@ -283,7 +284,6 @@ export default function Home() {
     year: [],
     month: [],
   });
-  // 🔥 STATE GENDER GLOBAL
   const [genderFilter, setGenderFilter] = useState("All");
 
   const updateFilter = (key, value) =>

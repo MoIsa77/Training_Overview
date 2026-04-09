@@ -1,8 +1,161 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 
+// ==========================================
+// KOMPONEN: CUSTOM GENDER DROPDOWN
+// ==========================================
+const GenderDropdown = ({ selected, onChange }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
+    if (isOpen) document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isOpen]);
+
+  // 🔥 FIX: Ikon Gender diganti pakai SVG dengan Stroke-Width tebal (4)
+  const options = [
+    {
+      id: "All",
+      label: "ALL",
+      icon: (
+        <svg
+          className="w-4 h-4"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="4"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M8.25 15L12 18.75 15.75 15m-7.5-6L12 5.25 15.75 9"
+          />
+        </svg>
+      ),
+      colorClass: "text-slate-600",
+      bgHover: "hover:bg-slate-100",
+    },
+    {
+      id: "Male",
+      label: "MALE",
+      icon: (
+        <svg
+          className="w-4 h-4"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="4"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M15.75 3.75h5.25v5.25M21 3.75l-7.5 7.5M15 15a6 6 0 11-12 0 6 6 0 0112 0z"
+          />
+        </svg>
+      ),
+      colorClass: "text-blue-600",
+      bgHover: "hover:bg-blue-50",
+    },
+    {
+      id: "Female",
+      label: "FEMALE",
+      icon: (
+        <svg
+          className="w-4 h-4"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="4"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M12 15v6M9 18h6M18 9a6 6 0 11-12 0 6 6 0 0112 0z"
+          />
+        </svg>
+      ),
+      colorClass: "text-pink-600",
+      bgHover: "hover:bg-pink-50",
+    },
+  ];
+
+  const current = options.find((o) => o.id === selected) || options[0];
+
+  return (
+    <div ref={dropdownRef} className="relative inline-block text-left z-50">
+      <div
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex items-center justify-between gap-3 px-3 py-1.5 bg-white border border-slate-200 rounded-full cursor-pointer hover:border-slate-300 hover:shadow-sm transition-all select-none"
+      >
+        <div className="flex items-center gap-1.5">
+          <div
+            className={`${current.colorClass} flex items-center justify-center`}
+          >
+            {current.icon}
+          </div>
+          <span
+            className={`text-[10px] font-bold ${current.colorClass} tracking-wider`}
+          >
+            {current.label}
+          </span>
+        </div>
+        <svg
+          className={`w-3 h-3 text-slate-400 transition-transform duration-300 ${isOpen ? "rotate-180" : ""}`}
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="3"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M19 9l-7 7-7-7"
+          ></path>
+        </svg>
+      </div>
+
+      {isOpen && (
+        <div className="absolute right-0 mt-1.5 w-32 bg-white rounded-xl shadow-xl border border-slate-100 overflow-hidden animate-in fade-in zoom-in-95 duration-100 origin-top-right">
+          <div className="py-1">
+            {options.map((opt) => (
+              <div
+                key={opt.id}
+                onClick={() => {
+                  onChange(opt.id);
+                  setIsOpen(false);
+                }}
+                className={`flex items-center gap-2 px-3 py-2 cursor-pointer transition-colors ${selected === opt.id ? "bg-slate-50" : "bg-white"} ${opt.bgHover}`}
+              >
+                <div
+                  className={`${opt.colorClass} flex items-center justify-center`}
+                >
+                  {opt.icon}
+                </div>
+                <span
+                  className={`text-[10px] font-bold ${opt.colorClass} tracking-wider`}
+                >
+                  {opt.label}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ==========================================
+// MAIN COMPONENT: MANDAYS SUMMARY
+// ==========================================
 export default function MandaysSummary({
   filters = {},
   genderFilter,
@@ -116,8 +269,9 @@ export default function MandaysSummary({
     let male = 0;
     let female = 0;
     map.forEach((g) => {
-      if (g === "male" || g === "laki-laki" || g === "l") male++;
-      if (g === "female" || g === "perempuan" || g === "p") female++;
+      if (g === "male" || g === "laki-laki" || g === "l" || g === "m") male++;
+      if (g === "female" || g === "perempuan" || g === "p" || g === "f")
+        female++;
     });
 
     setGenderCounts({ male, female });
@@ -162,7 +316,7 @@ export default function MandaysSummary({
 
   return (
     <div className="bg-white rounded-2xl border border-slate-300 shadow-md p-3 h-full flex flex-col gap-3 overflow-hidden">
-      <div className="flex items-center gap-2 font-bold text-slate-800 shrink-0 border-b border-slate-100 pb-2">
+      <div className="flex items-center gap-2 font-bold text-slate-800 shrink-0 border-b border-slate-100 pb-2 relative z-0">
         <div className="bg-[#2563eb] w-7 h-7 rounded-lg flex items-center justify-center text-white text-sm shadow-sm">
           👤
         </div>
@@ -179,24 +333,33 @@ export default function MandaysSummary({
           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
             Gender Distribution
           </span>
-          <select
-            value={genderFilter || "All"}
-            onChange={(e) => setGenderFilter && setGenderFilter(e.target.value)}
-            className="font-semibold bg-slate-100 border border-slate-200 text-slate-600 rounded px-2 py-0.5 outline-none text-[10px] cursor-pointer"
-          >
-            <option value="All">ALL</option>
-            <option value="Male">MALE</option>
-            <option value="Female">FEMALE</option>
-          </select>
+
+          {/* CUSTOM DROPDOWN */}
+          <GenderDropdown
+            selected={genderFilter || "All"}
+            onChange={(val) => setGenderFilter && setGenderFilter(val)}
+          />
         </div>
 
-        {/* 🔥 KARTU GENDER HILANG ATAU MUNCUL SECARA DINAMIS */}
-        <div className="flex gap-2 w-full transition-all duration-300">
+        <div className="flex gap-2 w-full transition-all duration-300 relative z-0">
           {(genderFilter === "All" || genderFilter === "Male") && (
             <div className="flex-1 bg-blue-50 border border-blue-100 rounded-xl p-2 flex flex-col justify-center relative overflow-hidden animate-in fade-in slide-in-from-left-4 duration-300">
               <div className="flex items-center gap-2 mb-1">
-                <div className="bg-blue-500 w-5 h-5 rounded flex items-center justify-center text-white text-[10px] shadow-sm z-10">
-                  ♂
+                {/* 🔥 Ikon SVG Tebal untuk Male */}
+                <div className="bg-blue-500 w-5 h-5 rounded flex items-center justify-center text-white shadow-sm z-10">
+                  <svg
+                    className="w-3.5 h-3.5"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M15.75 3.75h5.25v5.25M21 3.75l-7.5 7.5M15 15a6 6 0 11-12 0 6 6 0 0112 0z"
+                    />
+                  </svg>
                 </div>
                 <span className="text-[9px] font-bold text-blue-600 z-10">
                   MALE
@@ -205,8 +368,21 @@ export default function MandaysSummary({
               <span className="text-xl font-black text-blue-900 z-10">
                 {isLoading ? "..." : genderCounts.male}
               </span>
-              <div className="absolute -bottom-2 -right-2 text-4xl opacity-5">
-                ♂
+              {/* Background SVG Tebal Male */}
+              <div className="absolute -bottom-4 -right-4 z-0 text-blue-500 opacity-5">
+                <svg
+                  className="w-20 h-20"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="3"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M15.75 3.75h5.25v5.25M21 3.75l-7.5 7.5M15 15a6 6 0 11-12 0 6 6 0 0112 0z"
+                  />
+                </svg>
               </div>
             </div>
           )}
@@ -214,8 +390,21 @@ export default function MandaysSummary({
           {(genderFilter === "All" || genderFilter === "Female") && (
             <div className="flex-1 bg-pink-50 border border-pink-100 rounded-xl p-2 flex flex-col justify-center relative overflow-hidden animate-in fade-in slide-in-from-right-4 duration-300">
               <div className="flex items-center gap-2 mb-1">
-                <div className="bg-pink-400 w-5 h-5 rounded flex items-center justify-center text-white text-[10px] shadow-sm z-10">
-                  ♀
+                {/* 🔥 Ikon SVG Tebal untuk Female */}
+                <div className="bg-pink-400 w-5 h-5 rounded flex items-center justify-center text-white shadow-sm z-10">
+                  <svg
+                    className="w-3.5 h-3.5"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M12 15v6M9 18h6M18 9a6 6 0 11-12 0 6 6 0 0112 0z"
+                    />
+                  </svg>
                 </div>
                 <span className="text-[9px] font-bold text-pink-600 z-10">
                   FEMALE
@@ -224,15 +413,28 @@ export default function MandaysSummary({
               <span className="text-xl font-black text-pink-900 z-10">
                 {isLoading ? "..." : genderCounts.female}
               </span>
-              <div className="absolute -bottom-2 -right-2 text-4xl opacity-5">
-                ♀
+              {/* Background SVG Tebal Female */}
+              <div className="absolute -bottom-4 -right-4 z-0 text-pink-500 opacity-5">
+                <svg
+                  className="w-20 h-20"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="3"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M12 15v6M9 18h6M18 9a6 6 0 11-12 0 6 6 0 0112 0z"
+                  />
+                </svg>
               </div>
             </div>
           )}
         </div>
       </div>
 
-      <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 shrink-0 flex items-center gap-3 relative">
+      <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 shrink-0 flex items-center gap-3 relative z-0">
         <div className="relative w-[60%] flex flex-col justify-end">
           <ResponsiveContainer width="100%" aspect={2}>
             <PieChart margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
@@ -279,7 +481,7 @@ export default function MandaysSummary({
         </div>
       </div>
 
-      <div className="flex-1 min-h-0 grid grid-rows-2 gap-2 mt-1">
+      <div className="flex-1 min-h-0 grid grid-rows-2 gap-2 mt-1 relative z-0">
         <div className="bg-white border border-slate-200 rounded-xl flex flex-col min-h-0 overflow-hidden shadow-sm">
           <div className="overflow-y-auto flex-1 custom-scrollbar">
             <table className="w-full text-slate-700 text-[11px]">
