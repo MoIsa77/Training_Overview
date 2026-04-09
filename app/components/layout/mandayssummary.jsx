@@ -3,20 +3,21 @@
 import { useEffect, useState } from "react";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 
-export default function MandaysSummary({ filters = {} }) {
+export default function MandaysSummary({
+  filters = {},
+  genderFilter,
+  setGenderFilter,
+}) {
   const [monthlyData, setMonthlyData] = useState([]);
   const [deptData, setDeptData] = useState([]);
   const [participants, setParticipants] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const [genderCounts, setGenderCounts] = useState({
-    male: 0,
-    female: 0,
-  });
-
-  const [genderFilter, setGenderFilter] = useState("All");
+  const [genderCounts, setGenderCounts] = useState({ male: 0, female: 0 });
 
   const formatNumber = (val) => {
-    if (val === null || val === undefined || val === "") return "-";
+    if (val === null || val === undefined || val === "" || isNaN(val))
+      return "-";
     return parseFloat(val).toFixed(2).replace(".", ",");
   };
 
@@ -25,51 +26,52 @@ export default function MandaysSummary({ filters = {} }) {
   // ================= FETCH DATA =================
   useEffect(() => {
     async function fetchData() {
+      setIsLoading(true);
       try {
         const summaryRes = await fetch(
           "https://opensheet.elk.sh/1EkgLNCryuKRTt-0Lp5yfAUgjoc7vHNj-ZOdIScF2a1Y/Summary",
         );
         const summary = await summaryRes.json();
-
-        const formattedMonth = summary.map((row) => ({
-          month: row["Month"],
-          gaugeTarget: parseFloat(row["Target Mandays"]) || 0,
-          tableTarget: parseFloat(row["Grand Total Ytd Mandays Target"]) || 0,
-          current: parseFloat(row["Current"]) || 0,
-        }));
-
-        setMonthlyData(formattedMonth);
+        if (Array.isArray(summary)) {
+          const formattedMonth = summary.map((row) => ({
+            month: row["Month"],
+            gaugeTarget: parseFloat(row["Target Mandays"]) || 0,
+            tableTarget: parseFloat(row["Grand Total Ytd Mandays Target"]) || 0,
+            current: parseFloat(row["Current"]) || 0,
+          }));
+          setMonthlyData(formattedMonth);
+        }
 
         const deptRes = await fetch(
           "https://opensheet.elk.sh/1EkgLNCryuKRTt-0Lp5yfAUgjoc7vHNj-ZOdIScF2a1Y/Summary%20per%20Dept",
         );
         const deptJson = await deptRes.json();
-
-        const formattedDept = deptJson.map((row) => {
-          const keys = Object.keys(row);
-          return {
-            dept: row[keys[1]],
-            mandays: parseFloat(row[keys[4]]) || 0,
-          };
-        });
-
-        setDeptData(formattedDept);
+        if (Array.isArray(deptJson)) {
+          const formattedDept = deptJson.map((row) => {
+            const keys = Object.keys(row);
+            return {
+              dept: row[keys[1]],
+              mandays: parseFloat(row[keys[4]]) || 0,
+            };
+          });
+          setDeptData(formattedDept);
+        }
 
         const genderRes = await fetch(
           "https://opensheet.elk.sh/1EkgLNCryuKRTt-0Lp5yfAUgjoc7vHNj-ZOdIScF2a1Y/Main",
         );
         const genderJson = await genderRes.json();
-
-        setParticipants(genderJson);
+        if (Array.isArray(genderJson)) setParticipants(genderJson);
       } catch (err) {
-        console.log(err);
+        console.error(err);
+      } finally {
+        setIsLoading(false);
       }
     }
-
     fetchData();
   }, []);
 
-  // ================= GENDER COUNT =================
+  // ================= FILTER LOGIC =================
   useEffect(() => {
     if (!participants.length) return;
 
@@ -77,9 +79,8 @@ export default function MandaysSummary({ filters = {} }) {
       const month = normalize(row["Month"]);
       const dept = normalize(row["Department"] || row["Dept"]);
       const type = normalize(row["Training Type"] || row["TrainingType"]);
-      const category = normalize(row["Category"]);
+      const category = normalize(row["Training Category"] || row["Category"]);
 
-      // 🔥 PERBAIKAN: Mengecek data di dalam Array menggunakan .some()
       if (
         filters?.month?.length > 0 &&
         !filters.month.some((m) => normalize(m) === month)
@@ -105,28 +106,23 @@ export default function MandaysSummary({ filters = {} }) {
     });
 
     const map = new Map();
-
     filtered.forEach((row) => {
       const name = (row["Participants"] || "").trim();
       const gender = normalize(row["Gender"]);
-
       if (!name) return;
       if (!map.has(name)) map.set(name, gender);
     });
 
     let male = 0;
     let female = 0;
-
     map.forEach((g) => {
-      if (g === "male") male++;
-      if (g === "female") female++;
+      if (g === "male" || g === "laki-laki" || g === "l") male++;
+      if (g === "female" || g === "perempuan" || g === "p") female++;
     });
 
     setGenderCounts({ male, female });
   }, [participants, filters]);
 
-  // ================= GAUGE =================
-  // 🔥 PERBAIKAN: Gauge sekarang bisa mengakumulasi lebih dari 1 bulan jika dipilih banyak
   let gaugeMonthData = [];
   if (filters?.month && filters.month.length > 0) {
     gaugeMonthData = monthlyData.filter((m) =>
@@ -136,7 +132,6 @@ export default function MandaysSummary({ filters = {} }) {
       ),
     );
   } else if (monthlyData.length > 0) {
-    // Default ke bulan pertama jika tidak ada filter bulan yang dicentang
     gaugeMonthData = [monthlyData[0]];
   }
 
@@ -148,20 +143,13 @@ export default function MandaysSummary({ filters = {} }) {
     (sum, row) => sum + row.current,
     0,
   );
-
   const percent = totalTarget > 0 ? totalCurrent / totalTarget : 0;
 
   const gaugeData = [
     { name: "Current", value: totalCurrent },
-    {
-      name: "Remaining",
-      value: Math.max(totalTarget - totalCurrent, 0),
-    },
+    { name: "Remaining", value: Math.max(totalTarget - totalCurrent, 0) },
   ];
 
-  const COLORS = ["#dc2626", "#f8cdd1"];
-
-  // 🔥 PERBAIKAN: Tabel departemen mengikuti multi-select
   const filteredDept = deptData.filter((d) => {
     if (filters?.department && filters.department.length > 0) {
       return filters.department.some(
@@ -174,7 +162,6 @@ export default function MandaysSummary({ filters = {} }) {
 
   return (
     <div className="bg-white rounded-2xl border border-slate-300 shadow-md p-3 h-full flex flex-col gap-3 overflow-hidden">
-      {/* HEADER */}
       <div className="flex items-center gap-2 font-bold text-slate-800 shrink-0 border-b border-slate-100 pb-2">
         <div className="bg-[#2563eb] w-7 h-7 rounded-lg flex items-center justify-center text-white text-sm shadow-sm">
           👤
@@ -187,15 +174,14 @@ export default function MandaysSummary({ filters = {} }) {
         </div>
       </div>
 
-      {/* GENDER - SIDE-BY-SIDE */}
       <div className="flex flex-col gap-2 shrink-0">
         <div className="flex justify-between items-center px-1">
           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
             Gender Distribution
           </span>
           <select
-            value={genderFilter}
-            onChange={(e) => setGenderFilter(e.target.value)}
+            value={genderFilter || "All"}
+            onChange={(e) => setGenderFilter && setGenderFilter(e.target.value)}
             className="font-semibold bg-slate-100 border border-slate-200 text-slate-600 rounded px-2 py-0.5 outline-none text-[10px] cursor-pointer"
           >
             <option value="All">ALL</option>
@@ -204,46 +190,48 @@ export default function MandaysSummary({ filters = {} }) {
           </select>
         </div>
 
-        <div className="flex gap-2 w-full">
-          {/* Male Card */}
-          <div className="flex-1 bg-blue-50 border border-blue-100 rounded-xl p-2 flex flex-col justify-center relative overflow-hidden">
-            <div className="flex items-center gap-2 mb-1">
-              <div className="bg-blue-500 w-5 h-5 rounded flex items-center justify-center text-white text-[10px] shadow-sm z-10">
+        {/* 🔥 KARTU GENDER HILANG ATAU MUNCUL SECARA DINAMIS */}
+        <div className="flex gap-2 w-full transition-all duration-300">
+          {(genderFilter === "All" || genderFilter === "Male") && (
+            <div className="flex-1 bg-blue-50 border border-blue-100 rounded-xl p-2 flex flex-col justify-center relative overflow-hidden animate-in fade-in slide-in-from-left-4 duration-300">
+              <div className="flex items-center gap-2 mb-1">
+                <div className="bg-blue-500 w-5 h-5 rounded flex items-center justify-center text-white text-[10px] shadow-sm z-10">
+                  ♂
+                </div>
+                <span className="text-[9px] font-bold text-blue-600 z-10">
+                  MALE
+                </span>
+              </div>
+              <span className="text-xl font-black text-blue-900 z-10">
+                {isLoading ? "..." : genderCounts.male}
+              </span>
+              <div className="absolute -bottom-2 -right-2 text-4xl opacity-5">
                 ♂
               </div>
-              <span className="text-[9px] font-bold text-blue-600 z-10">
-                MALE
-              </span>
             </div>
-            <span className="text-xl font-black text-blue-900 z-10">
-              {genderCounts.male}
-            </span>
-            <div className="absolute -bottom-2 -right-2 text-4xl opacity-5">
-              ♂
-            </div>
-          </div>
+          )}
 
-          {/* Female Card */}
-          <div className="flex-1 bg-pink-50 border border-pink-100 rounded-xl p-2 flex flex-col justify-center relative overflow-hidden">
-            <div className="flex items-center gap-2 mb-1">
-              <div className="bg-pink-400 w-5 h-5 rounded flex items-center justify-center text-white text-[10px] shadow-sm z-10">
+          {(genderFilter === "All" || genderFilter === "Female") && (
+            <div className="flex-1 bg-pink-50 border border-pink-100 rounded-xl p-2 flex flex-col justify-center relative overflow-hidden animate-in fade-in slide-in-from-right-4 duration-300">
+              <div className="flex items-center gap-2 mb-1">
+                <div className="bg-pink-400 w-5 h-5 rounded flex items-center justify-center text-white text-[10px] shadow-sm z-10">
+                  ♀
+                </div>
+                <span className="text-[9px] font-bold text-pink-600 z-10">
+                  FEMALE
+                </span>
+              </div>
+              <span className="text-xl font-black text-pink-900 z-10">
+                {isLoading ? "..." : genderCounts.female}
+              </span>
+              <div className="absolute -bottom-2 -right-2 text-4xl opacity-5">
                 ♀
               </div>
-              <span className="text-[9px] font-bold text-pink-600 z-10">
-                FEMALE
-              </span>
             </div>
-            <span className="text-xl font-black text-pink-900 z-10">
-              {genderCounts.female}
-            </span>
-            <div className="absolute -bottom-2 -right-2 text-4xl opacity-5">
-              ♀
-            </div>
-          </div>
+          )}
         </div>
       </div>
 
-      {/* KPI + GAUGE */}
       <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 shrink-0 flex items-center gap-3 relative">
         <div className="relative w-[60%] flex flex-col justify-end">
           <ResponsiveContainer width="100%" aspect={2}>
@@ -259,7 +247,7 @@ export default function MandaysSummary({ filters = {} }) {
                 stroke="none"
               >
                 {gaugeData.map((entry, index) => (
-                  <Cell key={index} fill={COLORS[index]} />
+                  <Cell key={index} fill={["#dc2626", "#f8cdd1"][index]} />
                 ))}
               </Pie>
             </PieChart>
@@ -270,8 +258,7 @@ export default function MandaysSummary({ filters = {} }) {
             </div>
           </div>
         </div>
-
-        <div className="w-[40%] flex flex-col justify-center gap-3 bg-white border border-slate-100 rounded-lg p-3 shadow-sm h-full min-h-25">
+        <div className="w-[40%] flex flex-col justify-center gap-3 bg-white border border-slate-100 rounded-lg p-3 shadow-sm h-full min-h-[100px]">
           <div className="flex flex-col items-center text-center">
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
               Target
@@ -292,11 +279,9 @@ export default function MandaysSummary({ filters = {} }) {
         </div>
       </div>
 
-      {/* TABLES */}
       <div className="flex-1 min-h-0 grid grid-rows-2 gap-2 mt-1">
-        {/* MONTH TABLE */}
         <div className="bg-white border border-slate-200 rounded-xl flex flex-col min-h-0 overflow-hidden shadow-sm">
-          <div className="overflow-y-auto flex-1">
+          <div className="overflow-y-auto flex-1 custom-scrollbar">
             <table className="w-full text-slate-700 text-[11px]">
               <thead className="bg-[#16a34a] text-white sticky top-0 z-10">
                 <tr>
@@ -324,10 +309,8 @@ export default function MandaysSummary({ filters = {} }) {
             </table>
           </div>
         </div>
-
-        {/* DEPT TABLE */}
         <div className="bg-white border border-slate-200 rounded-xl flex flex-col min-h-0 overflow-hidden shadow-sm">
-          <div className="overflow-y-auto flex-1">
+          <div className="overflow-y-auto flex-1 custom-scrollbar">
             <table className="w-full text-slate-700 text-[11px]">
               <thead className="bg-[#2563eb] text-white sticky top-0 z-10">
                 <tr>

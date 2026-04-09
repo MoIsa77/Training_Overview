@@ -12,13 +12,18 @@ import {
   Legend,
 } from "recharts";
 
-export default function TrainingAnalytics({ filters = {} }) {
+// 🔥 FIX 1: Menambahkan genderFilter ke dalam props penerima
+export default function TrainingAnalytics({
+  filters = {},
+  genderFilter = "All",
+}) {
   const [typeData, setTypeData] = useState([]);
   const [categoryData, setCategoryData] = useState([]);
 
+  // 🔥 FIX 2: Menambahkan genderFilter ke dependency array agar chart update saat dropdown diklik
   useEffect(() => {
     fetchData();
-  }, [filters]);
+  }, [filters, genderFilter]);
 
   async function fetchData() {
     try {
@@ -47,6 +52,9 @@ export default function TrainingAnalytics({ filters = {} }) {
         const year = row["Year"] || row["Training Year"] || "";
         const month = row["Month"] || row["Training Month"] || "";
 
+        // 🔥 Ambil data gender dari sheet
+        const gender = row["Gender"] || row["Jenis Kelamin"] || "";
+
         if (
           filters?.department?.length > 0 &&
           !safeCheck(filters.department, department)
@@ -66,6 +74,16 @@ export default function TrainingAnalytics({ filters = {} }) {
           return false;
         if (filters?.month?.length > 0 && !safeCheck(filters.month, month))
           return false;
+
+        // 🔥 FIX 3: Saringan Gender
+        if (genderFilter !== "All") {
+          const g = String(gender).toLowerCase().trim();
+          const isMale = g === "male" || g === "laki-laki" || g === "l";
+          const isFemale = g === "female" || g === "perempuan" || g === "p";
+
+          if (genderFilter === "Male" && !isMale) return false;
+          if (genderFilter === "Female" && !isFemale) return false;
+        }
 
         return true;
       });

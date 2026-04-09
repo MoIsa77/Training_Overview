@@ -24,7 +24,8 @@ const DEPT_OPTIONS = [
   "FEM-CI",
   "Commercial",
 ];
-const TYPE_OPTIONS = ["Internal", "External"];
+// 🔥 FIX: Menambahkan "LinkedIn Learning" ke dalam opsi filter
+const TYPE_OPTIONS = ["Internal", "External", "LinkedIn Learning"];
 
 // ==========================================
 // KOMPONEN: FILTER DROPDOWN PREMIUM
@@ -213,6 +214,11 @@ export default function TrainingPlan({ filters: globalFilters }) {
     trainingType: [],
   });
 
+  const [plannedData, setPlannedData] = useState([]);
+  const [adHocData, setAdHocData] = useState([]);
+  const [sheetChartData, setSheetChartData] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+
   // SENSOR RESET OTOMATIS
   useEffect(() => {
     if (globalFilters) {
@@ -225,101 +231,97 @@ export default function TrainingPlan({ filters: globalFilters }) {
     }
   }, [globalFilters]);
 
-  // Data Dummy
-  const initialPlannedData = [
-    {
-      dept: "Operation",
-      title: "Management Spare Part",
-      type: "External",
-      status: "TBC",
-    },
-    {
-      dept: "Operation",
-      title: "Neo Matrix - Vigilant Training",
-      type: "Internal",
-      status: "TBC",
-    },
-    {
-      dept: "FIC",
-      title: "Camera Detection Capsule",
-      type: "Internal",
-      status: "TBC",
-    },
-    {
-      dept: "QA",
-      title: "Solidwork Training with CMM",
-      type: "External",
-      status: "TBC",
-    },
-    { dept: "HSE", title: "Energy Audit", type: "External", status: "TBC" },
-    {
-      dept: "HSE",
-      title: "Manager Energy - BNSP",
-      type: "External",
-      status: "TBC",
-    },
-    {
-      dept: "QA",
-      title: "Refresh training for Basic QA & Visual defect",
-      type: "Internal",
-      status: "TBC",
-    },
-    {
-      dept: "Operation",
-      title: "Refresh Basic Knowledge of Prod. Machine",
-      type: "Internal",
-      status: "TBC",
-    },
-  ];
+  // FETCH DATA
+  useEffect(() => {
+    const fetchTrainingPlanData = async () => {
+      setIsLoading(true);
+      try {
+        const [plannedRes, adhocRes, chartRes] = await Promise.all([
+          fetch(
+            "https://opensheet.elk.sh/1EkgLNCryuKRTt-0Lp5yfAUgjoc7vHNj-ZOdIScF2a1Y/Planned%20Training",
+          ),
+          fetch(
+            "https://opensheet.elk.sh/1EkgLNCryuKRTt-0Lp5yfAUgjoc7vHNj-ZOdIScF2a1Y/Unplanned%20Training",
+          ),
+          fetch(
+            "https://opensheet.elk.sh/1EkgLNCryuKRTt-0Lp5yfAUgjoc7vHNj-ZOdIScF2a1Y/Planned%20vs%20Unplanned",
+          ),
+        ]);
 
-  const initialAdHocData = [
-    {
-      dept: "QA",
-      title: "How to Network When You Don't Like Networking",
-      type: "Internal",
-      status: "Complete",
-    },
-    {
-      dept: "QA",
-      title: "Characteristics of a Great Scrum Master",
-      type: "External",
-      status: "Complete",
-    },
-    {
-      dept: "HR",
-      title: "Transform Your Days with Strategic Time Blocking",
-      type: "Internal",
-      status: "Complete",
-    },
-    {
-      dept: "HR",
-      title: "Hire Better. Hire Faster with Social Media",
-      type: "External",
-      status: "Complete",
-    },
-    {
-      dept: "FIC",
-      title: "The Four Tendencies: How to Build Better Habits",
-      type: "Internal",
-      status: "Complete",
-    },
-    {
-      dept: "FIC",
-      title: "AI Prompts for Deep Research",
-      type: "External",
-      status: "Complete",
-    },
-    {
-      dept: "Supply Chain",
-      title: "Uncertainty to Action: Starting AI Learning",
-      type: "Internal",
-      status: "Complete",
-    },
-  ];
+        const plannedRaw = await plannedRes.json();
+        const adhocRaw = await adhocRes.json();
+        const chartRaw = await chartRes.json();
 
-  // Mesin Filter
+        const formatData = (dataArray) => {
+          if (!dataArray || dataArray.error) return [];
+          return dataArray.map((item) => ({
+            dept: item["Dept"] || item["Department"] || "",
+            title: item["Training Title"] || item["Title"] || "Untitled",
+            type:
+              item["Type of Training"] ||
+              item["Training Type"] ||
+              item["Type"] ||
+              "",
+            status:
+              item["Status Label"] || item["status"] || item["Status"] || "TBC",
+          }));
+        };
+
+        const formatChartData = (dataArray) => {
+          if (!dataArray || dataArray.error || !Array.isArray(dataArray))
+            return [];
+
+          let plannedCount = 0;
+          let adHocCount = 0;
+
+          dataArray.forEach((item) => {
+            let rowValue = "";
+            if (item["Training Plan"]) {
+              rowValue = String(item["Training Plan"]).toLowerCase().trim();
+            } else {
+              const vals = Object.values(item).map((v) =>
+                String(v).toLowerCase().trim(),
+              );
+              if (vals.includes("planned")) rowValue = "planned";
+              else if (vals.includes("unplanned") || vals.includes("ad hoc"))
+                rowValue = "unplanned";
+            }
+
+            if (rowValue === "planned") {
+              plannedCount++;
+            } else if (
+              rowValue === "unplanned" ||
+              rowValue.includes("ad hoc")
+            ) {
+              adHocCount++;
+            }
+          });
+
+          if (plannedCount > 0 || adHocCount > 0) {
+            return [
+              { name: "Planned", value: plannedCount },
+              { name: "Ad Hoc", value: adHocCount },
+            ];
+          }
+          return [];
+        };
+
+        setPlannedData(formatData(plannedRaw));
+        setAdHocData(formatData(adhocRaw));
+        setSheetChartData(formatChartData(chartRaw));
+      } catch (error) {
+        console.error("Gagal menarik data Training Plan:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchTrainingPlanData();
+  }, []);
+
+  // Mesin Filter (Untuk Tabel)
   const filteredPlanned = useMemo(() => {
-    return initialPlannedData.filter((row) => {
+    return plannedData.filter((row) => {
       const matchDept =
         localFilters.department.length === 0 ||
         localFilters.department.includes(row.dept);
@@ -328,10 +330,10 @@ export default function TrainingPlan({ filters: globalFilters }) {
         localFilters.trainingType.includes(row.type);
       return matchDept && matchType;
     });
-  }, [localFilters]);
+  }, [localFilters, plannedData]);
 
   const filteredAdHoc = useMemo(() => {
-    return initialAdHocData.filter((row) => {
+    return adHocData.filter((row) => {
       const matchDept =
         localFilters.department.length === 0 ||
         localFilters.department.includes(row.dept);
@@ -340,26 +342,35 @@ export default function TrainingPlan({ filters: globalFilters }) {
         localFilters.trainingType.includes(row.type);
       return matchDept && matchType;
     });
-  }, [localFilters]);
+  }, [localFilters, adHocData]);
 
-  // Kalkulasi Chart
   const totalPlanned = filteredPlanned.length;
   const totalAdHoc = filteredAdHoc.length;
-  const total = totalPlanned + totalAdHoc;
 
-  const chartData =
-    total === 0
-      ? []
-      : [
-          {
-            name: "Planned",
-            value: Number(((totalPlanned / total) * 100).toFixed(1)),
-          },
-          {
-            name: "Ad Hoc",
-            value: Number(((totalAdHoc / total) * 100).toFixed(1)),
-          },
-        ];
+  // HYBRID MODE UNTUK CHART (Menyelesaikan masalah filter statis)
+  const isFilterActive =
+    localFilters.department.length > 0 || localFilters.trainingType.length > 0;
+  let chartData = [];
+
+  if (!isFilterActive && sheetChartData.length > 0) {
+    chartData = sheetChartData;
+  } else {
+    const total = totalPlanned + totalAdHoc;
+    chartData =
+      total === 0
+        ? []
+        : [
+            {
+              name: "Planned",
+              value: Number(((totalPlanned / total) * 100).toFixed(1)),
+            },
+            {
+              name: "Ad Hoc",
+              value: Number(((totalAdHoc / total) * 100).toFixed(1)),
+            },
+          ];
+  }
+
   const COLORS = ["#3b82f6", "#8b5cf6"];
 
   const renderCustomizedLabel = ({
@@ -416,11 +427,20 @@ export default function TrainingPlan({ filters: globalFilters }) {
                     <th className="p-2 font-bold">Dept</th>
                     <th className="p-2 font-bold">Training Title</th>
                     <th className="p-2 font-bold">Type of Training</th>
-                    <th className="p-2 font-bold">Status Label</th>
+                    <th className="p-2 font-bold">Status</th>
                   </tr>
                 </thead>
                 <tbody className="text-slate-700 divide-y divide-slate-100">
-                  {filteredPlanned.length === 0 ? (
+                  {isLoading ? (
+                    <tr>
+                      <td
+                        colSpan="4"
+                        className="text-center py-10 font-bold text-slate-400 animate-pulse"
+                      >
+                        Loading Planned Training...
+                      </td>
+                    </tr>
+                  ) : filteredPlanned.length === 0 ? (
                     <tr>
                       <td
                         colSpan="4"
@@ -468,11 +488,20 @@ export default function TrainingPlan({ filters: globalFilters }) {
                   <tr>
                     <th className="p-2 font-bold w-[15%]">Dept</th>
                     <th className="p-2 font-bold w-[50%]">Training Title</th>
-                    <th className="p-2 font-bold w-[35%]">Status Label</th>
+                    <th className="p-2 font-bold w-[35%]">Status</th>
                   </tr>
                 </thead>
                 <tbody className="text-slate-700 divide-y divide-slate-100">
-                  {filteredAdHoc.length === 0 ? (
+                  {isLoading ? (
+                    <tr>
+                      <td
+                        colSpan="3"
+                        className="text-center py-10 font-bold text-slate-400 animate-pulse"
+                      >
+                        Loading Unplanned Training...
+                      </td>
+                    </tr>
+                  ) : filteredAdHoc.length === 0 ? (
                     <tr>
                       <td
                         colSpan="3"
@@ -558,14 +587,16 @@ export default function TrainingPlan({ filters: globalFilters }) {
               </div>
             </div>
 
-            {/* 🔥 FIX: Diberi min-h-[250px] di HP agar container Recharts tidak collapse jadi 0 */}
             <div className="flex-1 min-h-[250px] lg:min-h-0 relative bg-slate-50/50 rounded-xl p-2 border border-slate-100">
-              {chartData.length === 0 ? (
-                <div className="absolute inset-0 flex items-center justify-center font-bold text-slate-400">
-                  Data Kosong
+              {isLoading ? (
+                <div className="absolute inset-0 flex items-center justify-center font-bold text-slate-400 animate-pulse">
+                  Loading Chart Data...
+                </div>
+              ) : chartData.length === 0 ? (
+                <div className="absolute inset-0 flex flex-col items-center justify-center font-bold text-slate-400">
+                  <span>Data Kosong / Tidak Cocok</span>
                 </div>
               ) : (
-                /* 🔥 FIX: Dibungkus dengan absolute inset-0 agar memaksa Recharts membaca ukuran Parent */
                 <div className="absolute inset-0">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>

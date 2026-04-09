@@ -21,7 +21,7 @@ const DEPT_OPTIONS = [
   "FEM-CI",
   "Commercial",
 ];
-const TYPE_OPTIONS = ["Internal", "External"];
+const TYPE_OPTIONS = ["Internal", "External", "LinkedIn Learning"];
 const CAT_OPTIONS = ["Technical", "Softskills", "Safety"];
 const YEAR_OPTIONS = ["2024", "2025", "2026"];
 const MONTH_OPTIONS = [
@@ -275,6 +275,7 @@ export default function Home() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [activePage, setActivePage] = useState("home");
   const [isHome, setIsHome] = useState(true);
+
   const [filters, setFilters] = useState({
     department: [],
     trainingType: [],
@@ -282,10 +283,12 @@ export default function Home() {
     year: [],
     month: [],
   });
+  // 🔥 STATE GENDER GLOBAL
+  const [genderFilter, setGenderFilter] = useState("All");
 
   const updateFilter = (key, value) =>
     setFilters((prev) => ({ ...prev, [key]: value }));
-  const resetFilters = () =>
+  const resetFilters = () => {
     setFilters({
       department: [],
       trainingType: [],
@@ -293,14 +296,13 @@ export default function Home() {
       year: [],
       month: [],
     });
+    setGenderFilter("All");
+  };
 
-  // 🔥 TEKNOLOGI SCROLL TINGKAT DEWA (Intersection Observer + RequestAnimationFrame)
-  // Ini akan membuang semua lag saat scroll manual!
   useEffect(() => {
     const scrollContainer = document.getElementById("main-scroll");
     if (!scrollContainer) return;
 
-    // 1. Radar untuk Menu Sidebar (Sangat ringan)
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
@@ -309,27 +311,21 @@ export default function Home() {
           }
         });
       },
-      { root: scrollContainer, threshold: 0.5 }, // Trigger saat 50% layar tertutup section
+      { root: scrollContainer, threshold: 0.5 },
     );
 
     document
       .querySelectorAll("section[id]")
       .forEach((section) => observer.observe(section));
 
-    // 2. Sensor khusus Header Transparan (Berjalan di GPU)
-    let ticking = false;
     const handleScroll = () => {
-      if (!ticking) {
-        window.requestAnimationFrame(() => {
-          setIsHome(scrollContainer.scrollTop < 50);
-          ticking = false;
-        });
-        ticking = true;
-      }
+      const opacity = Math.min(scrollContainer.scrollTop / 100, 1);
+      document.documentElement.style.setProperty("--header-opacity", opacity);
+      setIsHome(scrollContainer.scrollTop < 50);
     };
 
     scrollContainer.addEventListener("scroll", handleScroll, { passive: true });
-    scrollContainer.scrollTop = 0; // Anti Garis Putih di awal
+    scrollContainer.scrollTop = 0;
 
     return () => {
       observer.disconnect();
@@ -343,7 +339,6 @@ export default function Home() {
   };
 
   return (
-    // 🔥 FIX: Dihapus "snap-y snap-mandatory" agar jempol/mouse bisa scroll bebas tanpa dilawan browser!
     <div
       id="main-scroll"
       className="w-full overflow-y-auto scroll-smooth relative overscroll-none bg-[#1e3a8a] text-slate-800"
@@ -353,7 +348,6 @@ export default function Home() {
         id="top-sentinel"
         className="absolute top-0 left-0 w-full h-0 pointer-events-none z-0"
       ></div>
-
       <Header
         setMobileOpen={setMobileOpen}
         isHome={isHome}
@@ -367,7 +361,6 @@ export default function Home() {
         setActivePage={setActivePage}
       />
 
-      {/* 🔥 FIX: Dihapus class "snap-start" di semua section di bawah ini */}
       <section
         id="home"
         className="relative w-full flex flex-col items-center justify-center bg-cover bg-center z-10"
@@ -499,11 +492,20 @@ export default function Home() {
         </div>
         <div className="flex-1 w-full flex flex-col lg:flex-row gap-3 md:gap-4 min-h-0 overflow-y-auto lg:overflow-hidden pb-10 lg:pb-0 relative z-10">
           <div className="w-full lg:w-[30%] lg:min-w-[280px] lg:max-w-[380px] shrink-0 flex flex-col min-h-[600px] lg:min-h-0">
-            <MandaysSummary filters={filters} />
+            {/* 🔥 Passing Filter Gender ke MandaysSummary */}
+            <MandaysSummary
+              filters={filters}
+              genderFilter={genderFilter}
+              setGenderFilter={setGenderFilter}
+            />
           </div>
           <div className="flex-1 w-full flex flex-col gap-3 md:gap-4 min-w-0">
             <div className="flex-1 flex flex-col min-h-0 relative z-30">
-              <TrainingAnalytics filters={filters} />
+              {/* 🔥 Passing Filter Gender ke TrainingAnalytics */}
+              <TrainingAnalytics
+                filters={filters}
+                genderFilter={genderFilter}
+              />
             </div>
             <div className="h-[250px] lg:h-[35%] lg:min-h-[180px] shrink-0 relative z-20">
               <UpcomingTrainingTable />

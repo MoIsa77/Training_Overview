@@ -93,6 +93,37 @@ function isSameDate(d1, d2) {
   return new Date(d1).toDateString() === new Date(d2).toDateString();
 }
 
+function parseDateRange(dateStr, year = 2026) {
+  if (!dateStr) return { startDate: "", endDate: "" };
+  const str = dateStr.toString().trim();
+
+  const weekMatch = str.match(/Week\s+(\d+)/i);
+  if (weekMatch) {
+    const range = getDateRangeFromWeek(parseInt(weekMatch[1]), year);
+    return { startDate: range.start, endDate: range.end };
+  }
+
+  const dateMatch = str.match(/(\d+)\s*-\s*(\d+)\s+([a-zA-Z]+)/);
+  if (dateMatch) {
+    const startDay = parseInt(dateMatch[1]);
+    const endDay = parseInt(dateMatch[2]);
+    const monthStr = dateMatch[3].substring(0, 3);
+    const monthIndex = months.findIndex(
+      (m) => m.toLowerCase() === monthStr.toLowerCase(),
+    );
+
+    if (monthIndex !== -1) {
+      const sDate = new Date(year, monthIndex, startDay);
+      const eDate = new Date(year, monthIndex, endDay);
+      const format = (d) =>
+        `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+      return { startDate: format(sDate), endDate: format(eDate) };
+    }
+  }
+
+  return { startDate: "", endDate: "" };
+}
+
 // ==========================================
 // CUSTOM SELECT COMPONENT
 // ==========================================
@@ -163,6 +194,7 @@ const CustomSelect = ({ name, value, options, onChange, placeholder }) => {
 // ==========================================
 export default function TrainingCalendar() {
   const [trainings, setTrainings] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [rangeStart, setRangeStart] = useState(null);
   const [rangeEnd, setRangeEnd] = useState(null);
   const [inputMode, setInputMode] = useState("date");
@@ -177,6 +209,45 @@ export default function TrainingCalendar() {
     status: "plan",
     weekNumber: "",
   });
+
+  // 🔥 FETCH DATA DARI API OPENSHEET
+  useEffect(() => {
+    const fetchTrainingData = async () => {
+      try {
+        const response = await fetch(
+          "https://opensheet.elk.sh/1EkgLNCryuKRTt-0Lp5yfAUgjoc7vHNj-ZOdIScF2a1Y/Training%20Calendar",
+        );
+        const data = await response.json();
+
+        const formattedData = data.map((item) => {
+          const dateStr = item["Date"] || "";
+          const parsedDates = parseDateRange(dateStr, 2026);
+
+          return {
+            title: item["Training Title"] || "Untitled",
+            dateRange: dateStr,
+            startDate: parsedDates.startDate,
+            endDate: parsedDates.endDate,
+            type: item["Training Type"] || "Internal",
+            dept: item["Dept"] || "",
+            participants: item["Participants"] || "TBC",
+            // 🔥 MENGAMBIL STATUS DARI KOLOM "status" DI SHEET
+            status: item["status"]
+              ? item["status"].toLowerCase().trim()
+              : "plan",
+          };
+        });
+
+        setTrainings(formattedData);
+        setIsLoading(false);
+      } catch (error) {
+        console.error("Gagal menarik data dari Google Sheets:", error);
+        setIsLoading(false);
+      }
+    };
+
+    fetchTrainingData();
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -282,7 +353,6 @@ export default function TrainingCalendar() {
             isDateInRange(dateKey, t.startDate, t.endDate),
           );
 
-          // 🔥 Ukuran font HP diperkecil ke text-[8px] agar tidak nabrak
           let cellStyle =
             "cursor-pointer text-[8px] md:text-[9px] text-center h-full w-full flex items-center justify-center transition relative group ";
           const layers = [];
@@ -367,8 +437,6 @@ export default function TrainingCalendar() {
         }
       }
 
-      // 🔥 FIX: flex-1 dipastikan bekerja untuk meregangkan tiap baris hari dengan sama rata
-      // 🔥 FIX: Ukuran kolom W di HP diperkecil jadi 18px (sebelumnya 25px) agar hari-hari punya lebih banyak ruang
       rows.push(
         <div
           key={`row-${i}`}
@@ -406,7 +474,6 @@ export default function TrainingCalendar() {
       </div>
 
       {/* GRID KALENDER */}
-      {/* 🔥 FIX: auto-rows-fr memastikan SEMUA box kalender bulan punya tinggi yang SAMA PERSIS */}
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 md:gap-3 shrink-0 w-full auto-rows-fr">
         {months.map((month, i) => (
           <div
@@ -427,7 +494,6 @@ export default function TrainingCalendar() {
                 </div>
               ))}
             </div>
-            {/* 🔥 FIX: flex-1 flex-col memastikan hari-hari di dalam memenuhi ruang sisa secara sama rata */}
             <div className="flex flex-col flex-1">{renderDays(2026, i)}</div>
           </div>
         ))}
@@ -437,7 +503,6 @@ export default function TrainingCalendar() {
       <div className="flex flex-col lg:flex-row gap-3 md:gap-4 mt-2 w-full shrink-0">
         {/* INPUT FORM (KIRI) */}
         <div className="bg-white p-4 md:p-5 rounded-2xl border border-slate-200 shadow-md w-full lg:w-[32%] flex flex-col h-fit">
-          {/* 🔥 FIX: flex-wrap dan penataan ulang agar judul panjang tidak menabrak titik dan tombol di layar HP sempit */}
           <div className="flex flex-wrap sm:flex-nowrap items-center justify-between mb-4 border-b border-slate-100 pb-3 gap-3">
             <div className="flex items-center gap-1.5 shrink-0 min-w-min">
               <h2 className="text-xs md:text-sm font-black text-slate-800 uppercase tracking-tight whitespace-nowrap">
@@ -638,7 +703,16 @@ export default function TrainingCalendar() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 bg-white">
-                {trainings.length === 0 ? (
+                {isLoading ? (
+                  <tr>
+                    <td
+                      colSpan="5"
+                      className="p-20 text-center text-slate-400 font-bold uppercase tracking-widest animate-pulse"
+                    >
+                      Loading data from Google Sheets...
+                    </td>
+                  </tr>
+                ) : trainings.length === 0 ? (
                   <tr>
                     <td
                       colSpan="5"
