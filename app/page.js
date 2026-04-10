@@ -361,12 +361,29 @@ export default function Home() {
         setActivePage={setActivePage}
       />
 
+      {/* ========================================== */}
+      {/* 🔥 FIX: SECTION HOME DENGAN BACKGROUND VIDEO */}
+      {/* ========================================== */}
       <section
         id="home"
-        className="relative w-full flex flex-col items-center justify-center bg-cover bg-center z-10"
-        style={{ height: "100dvh", backgroundImage: "url('/bg_H.png')" }}
+        className="relative w-full flex flex-col items-center justify-center overflow-hidden z-10"
+        style={{ height: "100dvh" }}
       >
-        <div className="absolute inset-0 bg-black/40 pointer-events-none" />
+        {/* TAG VIDEO SEBAGAI BACKGROUND */}
+        <video
+          autoPlay
+          muted
+          loop
+          playsInline
+          className="absolute top-0 left-0 w-full h-full object-cover z-0"
+        >
+          <source src="/bgvid.mp4" type="video/mp4" />
+        </video>
+
+        {/* OVERLAY GELAP (Agar teks putih tetap terbaca di atas video) */}
+        <div className="absolute inset-0 bg-black/40 z-10 pointer-events-none" />
+
+        {/* KONTEN TEKS & TOMBOL */}
         <div className="relative z-40 text-center max-w-2xl px-6 text-white pointer-events-auto flex flex-col items-center">
           <h1 className="text-4xl md:text-5xl font-bold mb-6 md:mb-8 leading-tight uppercase tracking-wide">
             CORPORATE TRAINING OVERVIEW

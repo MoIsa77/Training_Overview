@@ -4,6 +4,46 @@ import { useEffect, useState, useRef } from "react";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 
 // ==========================================
+// KOMPONEN: ANIMATED NUMBER (Hitungan Stopwatch)
+// ==========================================
+const AnimatedNumber = ({ value, duration = 1000, decimals = 0 }) => {
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    let startTime = null;
+    let animationFrame;
+    const targetValue = parseFloat(value) || 0;
+
+    const animation = (currentTime) => {
+      if (!startTime) startTime = currentTime;
+      const progress = Math.min((currentTime - startTime) / duration, 1);
+
+      const easeProgress = 1 - Math.pow(1 - progress, 3);
+
+      setCount(easeProgress * targetValue);
+
+      if (progress < 1) {
+        animationFrame = requestAnimationFrame(animation);
+      } else {
+        setCount(targetValue);
+      }
+    };
+
+    setCount(0);
+    animationFrame = requestAnimationFrame(animation);
+
+    return () => cancelAnimationFrame(animationFrame);
+  }, [value, duration]);
+
+  const formattedCount =
+    decimals > 0
+      ? count.toFixed(decimals).replace(".", ",")
+      : Math.floor(count);
+
+  return <>{formattedCount}</>;
+};
+
+// ==========================================
 // KOMPONEN: CUSTOM GENDER DROPDOWN
 // ==========================================
 const GenderDropdown = ({ selected, onChange }) => {
@@ -20,7 +60,6 @@ const GenderDropdown = ({ selected, onChange }) => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isOpen]);
 
-  // 🔥 FIX: Ikon Gender diganti pakai SVG dengan Stroke-Width tebal (4)
   const options = [
     {
       id: "All",
@@ -153,9 +192,6 @@ const GenderDropdown = ({ selected, onChange }) => {
   );
 };
 
-// ==========================================
-// MAIN COMPONENT: MANDAYS SUMMARY
-// ==========================================
 export default function MandaysSummary({
   filters = {},
   genderFilter,
@@ -176,7 +212,6 @@ export default function MandaysSummary({
 
   const normalize = (val) => (val || "").toString().toLowerCase().trim();
 
-  // ================= FETCH DATA =================
   useEffect(() => {
     async function fetchData() {
       setIsLoading(true);
@@ -224,7 +259,6 @@ export default function MandaysSummary({
     fetchData();
   }, []);
 
-  // ================= FILTER LOGIC =================
   useEffect(() => {
     if (!participants.length) return;
 
@@ -315,7 +349,7 @@ export default function MandaysSummary({
   });
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-300 shadow-md p-3 h-full flex flex-col gap-3 overflow-hidden">
+    <div className="bg-white rounded-2xl border border-slate-300 shadow-md p-3 h-full flex flex-col gap-3 overflow-hidden transition-colors duration-300">
       <div className="flex items-center gap-2 font-bold text-slate-800 shrink-0 border-b border-slate-100 pb-2 relative z-0">
         <div className="bg-[#2563eb] w-7 h-7 rounded-lg flex items-center justify-center text-white text-sm shadow-sm">
           👤
@@ -333,8 +367,6 @@ export default function MandaysSummary({
           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
             Gender Distribution
           </span>
-
-          {/* CUSTOM DROPDOWN */}
           <GenderDropdown
             selected={genderFilter || "All"}
             onChange={(val) => setGenderFilter && setGenderFilter(val)}
@@ -345,7 +377,6 @@ export default function MandaysSummary({
           {(genderFilter === "All" || genderFilter === "Male") && (
             <div className="flex-1 bg-blue-50 border border-blue-100 rounded-xl p-2 flex flex-col justify-center relative overflow-hidden animate-in fade-in slide-in-from-left-4 duration-300">
               <div className="flex items-center gap-2 mb-1">
-                {/* 🔥 Ikon SVG Tebal untuk Male */}
                 <div className="bg-blue-500 w-5 h-5 rounded flex items-center justify-center text-white shadow-sm z-10">
                   <svg
                     className="w-3.5 h-3.5"
@@ -366,9 +397,16 @@ export default function MandaysSummary({
                 </span>
               </div>
               <span className="text-xl font-black text-blue-900 z-10">
-                {isLoading ? "..." : genderCounts.male}
+                {isLoading ? (
+                  "..."
+                ) : (
+                  <AnimatedNumber
+                    value={genderCounts.male}
+                    duration={1200}
+                    decimals={0}
+                  />
+                )}
               </span>
-              {/* Background SVG Tebal Male */}
               <div className="absolute -bottom-4 -right-4 z-0 text-blue-500 opacity-5">
                 <svg
                   className="w-20 h-20"
@@ -390,7 +428,6 @@ export default function MandaysSummary({
           {(genderFilter === "All" || genderFilter === "Female") && (
             <div className="flex-1 bg-pink-50 border border-pink-100 rounded-xl p-2 flex flex-col justify-center relative overflow-hidden animate-in fade-in slide-in-from-right-4 duration-300">
               <div className="flex items-center gap-2 mb-1">
-                {/* 🔥 Ikon SVG Tebal untuk Female */}
                 <div className="bg-pink-400 w-5 h-5 rounded flex items-center justify-center text-white shadow-sm z-10">
                   <svg
                     className="w-3.5 h-3.5"
@@ -411,9 +448,16 @@ export default function MandaysSummary({
                 </span>
               </div>
               <span className="text-xl font-black text-pink-900 z-10">
-                {isLoading ? "..." : genderCounts.female}
+                {isLoading ? (
+                  "..."
+                ) : (
+                  <AnimatedNumber
+                    value={genderCounts.female}
+                    duration={1200}
+                    decimals={0}
+                  />
+                )}
               </span>
-              {/* Background SVG Tebal Female */}
               <div className="absolute -bottom-4 -right-4 z-0 text-pink-500 opacity-5">
                 <svg
                   className="w-20 h-20"
@@ -456,7 +500,18 @@ export default function MandaysSummary({
           </ResponsiveContainer>
           <div className="absolute bottom-0 left-0 right-0 flex flex-col items-center justify-end pointer-events-none pb-1">
             <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-              {Math.round(percent * 100)}% Achieved
+              {isLoading ? (
+                "..."
+              ) : (
+                <>
+                  <AnimatedNumber
+                    value={Math.round(percent * 100)}
+                    duration={1200}
+                    decimals={0}
+                  />
+                  % Achieved
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -466,7 +521,15 @@ export default function MandaysSummary({
               Target
             </span>
             <span className="text-sm font-bold text-slate-700">
-              {formatNumber(totalTarget)}
+              {isLoading ? (
+                "..."
+              ) : (
+                <AnimatedNumber
+                  value={totalTarget}
+                  duration={1200}
+                  decimals={2}
+                />
+              )}
             </span>
           </div>
           <div className="w-full h-px bg-slate-100"></div>
@@ -475,7 +538,15 @@ export default function MandaysSummary({
               Current
             </span>
             <span className="text-lg font-black text-[#2563eb] leading-none">
-              {formatNumber(totalCurrent)}
+              {isLoading ? (
+                "..."
+              ) : (
+                <AnimatedNumber
+                  value={totalCurrent}
+                  duration={1200}
+                  decimals={2}
+                />
+              )}
             </span>
           </div>
         </div>
@@ -492,12 +563,9 @@ export default function MandaysSummary({
                   <th className="font-semibold text-center">Current</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-slate-100">
                 {monthlyData.map((row, i) => (
-                  <tr
-                    key={i}
-                    className="border-b border-slate-100 hover:bg-slate-50 transition"
-                  >
+                  <tr key={i} className="hover:bg-slate-50 transition">
                     <td className="p-1.5">{row.month}</td>
                     <td className="text-center font-medium">
                       {formatNumber(row.tableTarget)}
@@ -520,12 +588,9 @@ export default function MandaysSummary({
                   <th className="font-semibold text-center">Mandays</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-slate-100">
                 {filteredDept.slice(0, 10).map((row, i) => (
-                  <tr
-                    key={i}
-                    className="border-b border-slate-100 hover:bg-slate-50 transition"
-                  >
+                  <tr key={i} className="hover:bg-slate-50 transition">
                     <td className="p-1.5">{row.dept}</td>
                     <td className="text-center font-medium">
                       {formatNumber(row.mandays)}

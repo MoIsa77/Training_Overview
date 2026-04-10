@@ -10,9 +10,87 @@ import {
   ResponsiveContainer,
   CartesianGrid,
   Legend,
+  Rectangle, // 🔥 Tambahan untuk batang tumpul
 } from "recharts";
 
-// 🔥 FIX 1: Menambahkan genderFilter ke dalam props penerima
+// ==========================================
+// 🔥 KOMPONEN BAR CUSTOM: Sinkronisasi Total
+// ==========================================
+const CustomBarShape = (props) => {
+  const { x, y, width, height, fill, value } = props;
+  const [count, setCount] = useState(0);
+
+  // Memastikan nilai aman untuk dihitung
+  const targetValue = Array.isArray(value) ? value[1] : Number(value) || 0;
+
+  useEffect(() => {
+    let startTime = null;
+    let animationFrame;
+    const duration = 2000; // 🔥 Diperlambat jadi 2 detik agar selaras dan elegan
+
+    if (targetValue === 0) {
+      setCount(0);
+      return;
+    }
+
+    const animation = (currentTime) => {
+      if (!startTime) startTime = currentTime;
+      const progress = Math.min((currentTime - startTime) / duration, 1);
+
+      // Efek Ease-Out (Mulai cepat, mengerem di akhir agar pas dengan grafik Recharts)
+      const easeProgress = progress * (2 - progress);
+
+      setCount(Math.floor(easeProgress * targetValue));
+
+      if (progress < 1) {
+        animationFrame = requestAnimationFrame(animation);
+      } else {
+        setCount(targetValue);
+      }
+    };
+
+    setCount(0); // Mulai dari 0 setiap kali di-filter
+    animationFrame = requestAnimationFrame(animation);
+
+    return () => cancelAnimationFrame(animationFrame);
+  }, [targetValue]);
+
+  return (
+    <g>
+      {/* Batang Grafik: Radius [0, 8, 8, 0] membuatnya tumpul di sebelah kanan */}
+      <Rectangle
+        x={x}
+        y={y}
+        width={Math.max(width, 0)}
+        height={height}
+        fill={fill}
+        radius={[0, 8, 8, 0]}
+      />
+
+      {/* Label Angka: Posisinya x + width + 8, didorong mengikuti ujung bar */}
+      {targetValue > 0 && width >= 0 && (
+        <text
+          x={x + width + 8} // 🔥 Posisinya nangkring di LUAR ujung batang
+          y={y + height / 2 + 1}
+          fill="#475569" // Warna abu-abu gelap elegan
+          textAnchor="start"
+          dominantBaseline="central"
+          style={{
+            fontSize: "12px",
+            fontWeight: "900",
+            fontFamily: "sans-serif",
+          }}
+        >
+          {count}
+        </text>
+      )}
+    </g>
+  );
+};
+
+// ==========================================
+// MAIN COMPONENT (DENGAN SUMBER DATA ASLI MILIKMU)
+// ==========================================
 export default function TrainingAnalytics({
   filters = {},
   genderFilter = "All",
@@ -20,11 +98,11 @@ export default function TrainingAnalytics({
   const [typeData, setTypeData] = useState([]);
   const [categoryData, setCategoryData] = useState([]);
 
-  // 🔥 FIX 2: Menambahkan genderFilter ke dependency array agar chart update saat dropdown diklik
   useEffect(() => {
     fetchData();
   }, [filters, genderFilter]);
 
+  // 🔥 SUMBER DATA & LOGIKA ASLI MILIK ISA
   async function fetchData() {
     try {
       const res = await fetch(
@@ -52,7 +130,7 @@ export default function TrainingAnalytics({
         const year = row["Year"] || row["Training Year"] || "";
         const month = row["Month"] || row["Training Month"] || "";
 
-        // 🔥 Ambil data gender dari sheet
+        // Ambil data gender dari sheet
         const gender = row["Gender"] || row["Jenis Kelamin"] || "";
 
         if (
@@ -75,7 +153,7 @@ export default function TrainingAnalytics({
         if (filters?.month?.length > 0 && !safeCheck(filters.month, month))
           return false;
 
-        // 🔥 FIX 3: Saringan Gender
+        // Saringan Gender
         if (genderFilter !== "All") {
           const g = String(gender).toLowerCase().trim();
           const isMale = g === "male" || g === "laki-laki" || g === "l";
@@ -95,6 +173,7 @@ export default function TrainingAnalytics({
     }
   }
 
+  // 🔥 LOGIKA ASLI MILIK ISA
   function processTypeData(data) {
     const result = {};
 
@@ -122,6 +201,7 @@ export default function TrainingAnalytics({
     setTypeData(Object.values(result));
   }
 
+  // 🔥 LOGIKA ASLI MILIK ISA
   function processCategoryData(data) {
     const result = {};
 
@@ -153,7 +233,6 @@ export default function TrainingAnalytics({
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 w-full h-full min-h-0">
       {/* CARD 1: TRAINING BY TYPE */}
       <div className="bg-white rounded-2xl border border-slate-300 shadow-md p-3 md:p-4 flex flex-col h-[300px] lg:h-full min-h-0 overflow-hidden">
-        {/* 🔥 FIX: Judul dengan 3 Titik Warna */}
         <div className="flex items-center gap-2 mb-3 shrink-0">
           <h2 className="font-bold text-slate-800 text-xs md:text-sm tracking-wide uppercase">
             TRAINING BY TYPE
@@ -170,20 +249,58 @@ export default function TrainingAnalytics({
             <BarChart
               layout="vertical"
               data={typeData}
-              margin={{ top: 10, right: 20, left: -20, bottom: 0 }}
+              // 🔥 Margin kanan diperlebar (right: 40) agar label di luar batang tidak terpotong
+              margin={{ top: 10, right: 40, left: -20, bottom: 0 }}
             >
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis type="number" tick={{ fontSize: 12 }} />
+              <CartesianGrid
+                strokeDasharray="3 3"
+                horizontal={false}
+                stroke="#e2e8f0"
+              />
+              <XAxis
+                type="number"
+                tick={{ fontSize: 11, fontWeight: "bold", fill: "#64748b" }}
+              />
               <YAxis
                 dataKey="name"
                 type="category"
                 width={120}
-                tick={{ fontSize: 11 }}
+                tick={{ fontSize: 11, fontWeight: "bold", fill: "#475569" }}
               />
-              <Tooltip />
-              <Legend wrapperStyle={{ fontSize: "12px" }} />
-              <Bar dataKey="planned" fill="#3b82f6" name="Planned" />
-              <Bar dataKey="implemented" fill="#dc2626" name="Implemented" />
+              <Tooltip
+                cursor={{ fill: "#f1f5f9" }}
+                contentStyle={{
+                  borderRadius: "8px",
+                  border: "1px solid #e2e8f0",
+                  boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
+                }}
+              />
+              <Legend
+                wrapperStyle={{
+                  fontSize: "12px",
+                  fontWeight: "bold",
+                  color: "#1e293b",
+                  paddingTop: "10px",
+                }}
+              />
+
+              {/* 🔥 Menerapkan CustomBarShape dan durasi pelan (2000ms) */}
+              <Bar
+                dataKey="planned"
+                fill="#3b82f6"
+                name="Planned"
+                barSize={25}
+                animationDuration={2000}
+                shape={<CustomBarShape />}
+              />
+              <Bar
+                dataKey="implemented"
+                fill="#dc2626"
+                name="Implemented"
+                barSize={25}
+                animationDuration={2000}
+                shape={<CustomBarShape />}
+              />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -191,7 +308,6 @@ export default function TrainingAnalytics({
 
       {/* CARD 2: TRAINING BY CATEGORY */}
       <div className="bg-white rounded-2xl border border-slate-300 shadow-md p-3 md:p-4 flex flex-col h-[300px] lg:h-full min-h-0 overflow-hidden">
-        {/* 🔥 FIX: Judul dengan 3 Titik Warna */}
         <div className="flex items-center gap-2 mb-3 shrink-0">
           <h2 className="font-bold text-slate-800 text-xs md:text-sm tracking-wide uppercase">
             TRAINING BY CATEGORY
@@ -208,20 +324,58 @@ export default function TrainingAnalytics({
             <BarChart
               layout="vertical"
               data={categoryData}
-              margin={{ top: 10, right: 20, left: -20, bottom: 0 }}
+              // 🔥 Margin kanan diperlebar (right: 40) agar label di luar batang tidak terpotong
+              margin={{ top: 10, right: 40, left: -20, bottom: 0 }}
             >
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis type="number" tick={{ fontSize: 12 }} />
+              <CartesianGrid
+                strokeDasharray="3 3"
+                horizontal={false}
+                stroke="#e2e8f0"
+              />
+              <XAxis
+                type="number"
+                tick={{ fontSize: 11, fontWeight: "bold", fill: "#64748b" }}
+              />
               <YAxis
                 dataKey="name"
                 type="category"
                 width={120}
-                tick={{ fontSize: 11 }}
+                tick={{ fontSize: 11, fontWeight: "bold", fill: "#475569" }}
               />
-              <Tooltip />
-              <Legend wrapperStyle={{ fontSize: "12px" }} />
-              <Bar dataKey="planned" fill="#3b82f6" name="Planned" />
-              <Bar dataKey="implemented" fill="#dc2626" name="Implemented" />
+              <Tooltip
+                cursor={{ fill: "#f1f5f9" }}
+                contentStyle={{
+                  borderRadius: "8px",
+                  border: "1px solid #e2e8f0",
+                  boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
+                }}
+              />
+              <Legend
+                wrapperStyle={{
+                  fontSize: "12px",
+                  fontWeight: "bold",
+                  color: "#1e293b",
+                  paddingTop: "10px",
+                }}
+              />
+
+              {/* 🔥 Menerapkan CustomBarShape dan durasi pelan (2000ms) */}
+              <Bar
+                dataKey="planned"
+                fill="#3b82f6"
+                name="Planned"
+                barSize={25}
+                animationDuration={2000}
+                shape={<CustomBarShape />}
+              />
+              <Bar
+                dataKey="implemented"
+                fill="#dc2626"
+                name="Implemented"
+                barSize={25}
+                animationDuration={2000}
+                shape={<CustomBarShape />}
+              />
             </BarChart>
           </ResponsiveContainer>
         </div>
