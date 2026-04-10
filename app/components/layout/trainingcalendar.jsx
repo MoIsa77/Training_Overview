@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useMemo } from "react";
+import { createPortal } from "react-dom";
 
 const months = [
   "Jan",
@@ -190,7 +191,7 @@ const CustomSelect = ({ name, value, options, onChange, placeholder }) => {
 };
 
 // ==========================================
-// 🔥 CASCADING EMPLOYEE SELECT WITH SEARCH
+// CASCADING EMPLOYEE SELECT WITH SEARCH
 // ==========================================
 const CascadingEmployeeSelect = ({
   employeesData,
@@ -202,7 +203,6 @@ const CascadingEmployeeSelect = ({
   const [searchTerm, setSearchTerm] = useState("");
   const dropdownRef = useRef(null);
 
-  // Dapatkan daftar departemen unik
   const departments = useMemo(() => {
     const depts = [
       ...new Set(employeesData.map((emp) => emp.department).filter(Boolean)),
@@ -210,7 +210,6 @@ const CascadingEmployeeSelect = ({
     return depts.sort();
   }, [employeesData]);
 
-  // Filter karyawan berdasarkan Departemen & Search term
   const filteredEmployees = useMemo(() => {
     if (!selectedDept) return [];
     return employeesData
@@ -222,7 +221,6 @@ const CascadingEmployeeSelect = ({
       );
   }, [employeesData, selectedDept, searchTerm]);
 
-  // Handle klik di luar untuk menutup
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target))
@@ -232,7 +230,6 @@ const CascadingEmployeeSelect = ({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isOpen]);
 
-  // Handle seleksi karyawan (checkbox logic)
   const toggleEmployee = (empName) => {
     const currentArray = selectedParticipants
       ? selectedParticipants.split(", ").filter(Boolean)
@@ -243,7 +240,6 @@ const CascadingEmployeeSelect = ({
     } else {
       newArray = [...currentArray, empName];
     }
-    // Kirim event buatan seolah-olah ini input biasa
     onChange({ target: { name: "participants", value: newArray.join(", ") } });
   };
 
@@ -253,7 +249,6 @@ const CascadingEmployeeSelect = ({
     setSelectedDept("");
   };
 
-  // Teks untuk tombol dropdown
   const displayText = selectedParticipants
     ? selectedParticipants.split(",").length > 1
       ? `${selectedParticipants.split(",")[0]} +${selectedParticipants.split(",").length - 1} more`
@@ -292,7 +287,6 @@ const CascadingEmployeeSelect = ({
 
       {isOpen && (
         <div className="absolute top-full left-0 w-full md:w-[250%] lg:w-[200%] mt-1 bg-white border border-slate-200 rounded-xl shadow-2xl z-[9999] overflow-hidden animate-in fade-in zoom-in-95 duration-100 flex flex-col md:flex-row h-[300px]">
-          {/* BAGIAN KIRI: Pilih Departemen */}
           <div className="w-full md:w-1/3 border-b md:border-b-0 md:border-r border-slate-100 bg-slate-50 overflow-y-auto custom-scrollbar flex flex-col h-[100px] md:h-full shrink-0">
             <div className="p-2 text-[9px] font-bold text-slate-400 uppercase tracking-widest bg-slate-100 sticky top-0 z-10 shadow-sm">
               1. Department
@@ -302,7 +296,7 @@ const CascadingEmployeeSelect = ({
                 key={dept}
                 onClick={() => {
                   setSelectedDept(dept);
-                  setSearchTerm(""); // Reset search saat ganti dept
+                  setSearchTerm("");
                 }}
                 className={`px-3 py-2 text-[10px] md:text-[11px] font-bold cursor-pointer transition border-l-2 ${selectedDept === dept ? "border-blue-600 bg-white text-blue-700 shadow-sm z-0 relative" : "border-transparent hover:bg-slate-100 text-slate-600"}`}
               >
@@ -311,7 +305,6 @@ const CascadingEmployeeSelect = ({
             ))}
           </div>
 
-          {/* BAGIAN KANAN: Search & Pilih Karyawan */}
           <div className="w-full md:w-2/3 flex flex-col h-full bg-white">
             <div className="p-2 bg-white sticky top-0 z-10 border-b border-slate-100 shadow-sm">
               <div className="flex items-center gap-2 mb-1.5">
@@ -407,7 +400,6 @@ const CascadingEmployeeSelect = ({
               )}
             </div>
 
-            {/* Tombol Confirm/Tutup */}
             <div className="p-2 border-t border-slate-100 bg-slate-50 shrink-0">
               <button
                 type="button"
@@ -429,11 +421,14 @@ const CascadingEmployeeSelect = ({
 // ==========================================
 export default function TrainingCalendar() {
   const [trainings, setTrainings] = useState([]);
-  const [employeesList, setEmployeesList] = useState([]); // 🔥 State untuk data Employee List
+  const [employeesList, setEmployeesList] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [rangeStart, setRangeStart] = useState(null);
   const [rangeEnd, setRangeEnd] = useState(null);
   const [inputMode, setInputMode] = useState("date");
+
+  const [selectedTraining, setSelectedTraining] = useState(null);
+  const [isMounted, setIsMounted] = useState(false);
 
   const [form, setForm] = useState({
     title: "",
@@ -446,12 +441,11 @@ export default function TrainingCalendar() {
     weekNumber: "",
   });
 
-  // 🔥 FETCH DATA TRAINING & EMPLOYEE LIST
   useEffect(() => {
+    setIsMounted(true);
     const fetchAllData = async () => {
       try {
         setIsLoading(true);
-        // Tarik Data Kalender
         const responseCalendar = await fetch(
           "https://opensheet.elk.sh/1EkgLNCryuKRTt-0Lp5yfAUgjoc7vHNj-ZOdIScF2a1Y/Training%20Calendar",
           { cache: "no-store" },
@@ -478,18 +472,14 @@ export default function TrainingCalendar() {
 
         setTrainings(formattedData);
 
-        // 🔥 Tarik Data Employee List
         const responseEmployees = await fetch(
           "https://opensheet.elk.sh/1EkgLNCryuKRTt-0Lp5yfAUgjoc7vHNj-ZOdIScF2a1Y/Employee%20List",
           { cache: "no-store" },
         );
         const dataEmployees = await responseEmployees.json();
 
-        // Format mapping data employee (sesuaikan key kolom sheet dengan yang asli)
-        // Di sini saya asumsikan kolom bernama "Name", "Department"/"Dept", dan opsional "ID"
         const formattedEmployees = dataEmployees
           .map((emp) => {
-            // Mencari key secara dinamis berjaga-jaga nama kolom beda huruf besar/kecil
             const getVal = (possibleKeys) => {
               const keys = Object.keys(emp);
               for (let pk of possibleKeys) {
@@ -502,14 +492,13 @@ export default function TrainingCalendar() {
               }
               return "";
             };
-
             return {
               name: getVal(["Name", "EmployeeName", "Nama", "Participants"]),
               department: getVal(["Department", "Dept", "Departement"]),
               id: getVal(["ID", "NIK", "EmployeeID", "No"]) || "",
             };
           })
-          .filter((emp) => emp.name && emp.department); // Buang row kosong
+          .filter((emp) => emp.name && emp.department);
 
         setEmployeesList(formattedEmployees);
         setIsLoading(false);
@@ -725,7 +714,7 @@ export default function TrainingCalendar() {
   };
 
   return (
-    <div className="h-full w-full flex flex-col gap-3 md:gap-4 p-2 md:p-5 overflow-y-auto bg-[#f1f5f9] custom-scrollbar font-sans pb-10">
+    <div className="h-full w-full flex flex-col gap-3 md:gap-4 p-2 md:p-5 overflow-y-auto bg-[#f1f5f9] custom-scrollbar font-sans pb-10 relative">
       {/* HEADER SECTION */}
       <div className="flex flex-col md:flex-row justify-between items-end md:items-center gap-3 shrink-0">
         <h1 className="text-3xl md:text-4xl font-black text-[#d32f2f] tracking-tighter">
@@ -919,7 +908,6 @@ export default function TrainingCalendar() {
               </div>
             </div>
 
-            {/* 🔥 NEW: CASCADING EMPLOYEE SELECT */}
             <div className="relative z-30">
               <label className="text-[9px] font-bold text-slate-500 uppercase block mb-1.5">
                 Participants (From Employee List)
@@ -951,6 +939,9 @@ export default function TrainingCalendar() {
               <div className="w-1.5 h-1.5 rounded-full bg-green-500"></div>
               <div className="w-1.5 h-1.5 rounded-full bg-red-500"></div>
             </div>
+            <span className="ml-auto text-[9px] font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded-md">
+              👆 Click a row for full details
+            </span>
           </div>
           <div className="flex-1 overflow-auto rounded-xl border border-slate-100 custom-scrollbar">
             <table className="w-full min-w-[700px] text-[11px] text-left">
@@ -994,8 +985,12 @@ export default function TrainingCalendar() {
                   </tr>
                 ) : (
                   trainings.map((t, index) => (
-                    <tr key={index} className="hover:bg-blue-50/50 transition">
-                      <td className="p-3 md:p-4 font-bold text-slate-900">
+                    <tr
+                      key={index}
+                      onClick={() => setSelectedTraining(t)}
+                      className="hover:bg-blue-50/80 transition cursor-pointer active:scale-[0.99]"
+                    >
+                      <td className="p-3 md:p-4 font-bold text-slate-900 group-hover:text-blue-700 transition-colors">
                         {t.title}
                       </td>
                       <td className="p-3 md:p-4 text-center text-slate-500 font-bold">
@@ -1004,7 +999,6 @@ export default function TrainingCalendar() {
                       <td className="p-3 md:p-4 text-center font-bold text-slate-600">
                         {t.type}
                       </td>
-                      {/* 🔥 Agar text participant panjang tidak merusak tabel */}
                       <td
                         className="p-3 md:p-4 font-medium text-slate-700 max-w-[200px] truncate"
                         title={t.participants}
@@ -1026,6 +1020,142 @@ export default function TrainingCalendar() {
           </div>
         </div>
       </div>
+
+      {/* ========================================== */}
+      {/* MODAL POP-UP DETAIL TRAINING */}
+      {/* ========================================== */}
+      {isMounted &&
+        selectedTraining &&
+        createPortal(
+          <div className="fixed inset-0 z-[1000000] flex items-center justify-center p-4 pointer-events-auto">
+            {/* Latar Hitam Blur */}
+            <div
+              className="absolute inset-0 bg-slate-900/60 backdrop-blur-[2px]"
+              onClick={() => setSelectedTraining(null)}
+            ></div>
+
+            {/* Kotak Modal */}
+            <div className="relative bg-white w-full max-w-md rounded-2xl shadow-2xl flex flex-col animate-in fade-in zoom-in-95 duration-200 overflow-hidden">
+              {/* Header Modal */}
+              <div className="bg-slate-50 border-b border-slate-100 p-5 flex justify-between items-start gap-4">
+                <div>
+                  <span
+                    className={`inline-block px-2.5 py-1 rounded-full text-[9px] font-black uppercase shadow-sm mb-2 ${getStatusColor(selectedTraining.status)}`}
+                  >
+                    {selectedTraining.status}
+                  </span>
+                  <h3 className="font-black text-slate-800 text-lg md:text-xl leading-tight">
+                    {selectedTraining.title}
+                  </h3>
+                </div>
+                <button
+                  onClick={() => setSelectedTraining(null)}
+                  className="w-8 h-8 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-400 hover:text-red-500 hover:border-red-200 hover:bg-red-50 transition-colors shrink-0 shadow-sm"
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* Konten Modal */}
+              <div className="p-5 flex flex-col gap-5">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-slate-50 rounded-xl p-3 border border-slate-100">
+                    <span className="text-slate-400 font-bold uppercase tracking-wider text-[9px] block mb-1">
+                      Date / Week
+                    </span>
+                    <p className="font-bold text-slate-700 text-xs">
+                      {selectedTraining.dateRange}
+                    </p>
+                  </div>
+                  <div className="bg-slate-50 rounded-xl p-3 border border-slate-100">
+                    <span className="text-slate-400 font-bold uppercase tracking-wider text-[9px] block mb-1">
+                      Training Type
+                    </span>
+                    <p className="font-bold text-slate-700 text-xs">
+                      {selectedTraining.type}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex flex-col h-full min-h-[100px]">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-slate-500 font-bold uppercase tracking-wider text-[10px]">
+                      Participants List
+                    </span>
+                    <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded-md text-[9px] font-bold">
+                      {
+                        selectedTraining.participants.split(",").filter(Boolean)
+                          .length
+                      }{" "}
+                      People
+                    </span>
+                  </div>
+
+                  {/* 🔥 Daftar Partisipan dengan Nama Departemen */}
+                  <div className="bg-white border border-slate-200 rounded-xl p-3 max-h-[180px] overflow-y-auto custom-scrollbar shadow-inner">
+                    {selectedTraining.participants ? (
+                      <ul className="list-none space-y-1">
+                        {selectedTraining.participants
+                          .split(",")
+                          .filter(Boolean)
+                          .map((p, i) => {
+                            const empName = p.trim();
+                            // Mencari kecocokan nama dengan data dari Employee List
+                            const foundEmp = employeesList.find(
+                              (e) =>
+                                e.name.toLowerCase() === empName.toLowerCase(),
+                            );
+                            const dept = foundEmp ? foundEmp.department : null;
+
+                            return (
+                              <li
+                                key={i}
+                                className="flex items-center justify-between gap-2 text-slate-700 font-medium text-[11px] md:text-xs p-1.5 hover:bg-slate-50 rounded-lg transition-colors group"
+                              >
+                                <div className="flex items-center gap-2 truncate">
+                                  <div className="w-1.5 h-1.5 rounded-full bg-[#d32f2f] shrink-0"></div>
+                                  <span
+                                    className="truncate group-hover:text-blue-700 transition-colors"
+                                    title={empName}
+                                  >
+                                    {empName}
+                                  </span>
+                                </div>
+                                {dept ? (
+                                  <span className="text-[8px] md:text-[9px] font-bold px-2 py-0.5 rounded border border-slate-200 bg-white shadow-sm text-slate-500 whitespace-nowrap shrink-0 group-hover:border-blue-200 group-hover:text-blue-600 transition-colors">
+                                    {dept}
+                                  </span>
+                                ) : (
+                                  <span className="text-[8px] md:text-[9px] font-medium px-2 py-0.5 text-slate-300 whitespace-nowrap shrink-0">
+                                    -
+                                  </span>
+                                )}
+                              </li>
+                            );
+                          })}
+                      </ul>
+                    ) : (
+                      <span className="text-slate-400 italic text-xs block p-2 text-center">
+                        No participants assigned yet.
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Footer Modal */}
+              <div className="p-4 bg-slate-50 border-t border-slate-100">
+                <button
+                  onClick={() => setSelectedTraining(null)}
+                  className="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-3 rounded-xl transition-colors text-[11px] uppercase tracking-widest"
+                >
+                  Close Details
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body,
+        )}
 
       <style jsx>{`
         .custom-scrollbar::-webkit-scrollbar {
