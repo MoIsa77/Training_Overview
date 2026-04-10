@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 
 const months = [
   "Jan",
@@ -146,7 +146,7 @@ const CustomSelect = ({ name, value, options, onChange, placeholder }) => {
     <div ref={dropdownRef} className="relative w-full">
       <div
         onClick={() => setIsOpen(!isOpen)}
-        className={`w-full border rounded-lg p-2 bg-white flex items-center justify-between cursor-pointer transition shadow-sm ${isOpen ? "border-blue-500 ring-2 ring-blue-500/20" : "border-slate-200 hover:border-blue-400"}`}
+        className={`w-full border rounded-lg p-2 md:p-2.5 h-[36px] md:h-[38px] bg-white flex items-center justify-between cursor-pointer transition shadow-sm ${isOpen ? "border-blue-500 ring-2 ring-blue-500/20" : "border-slate-200 hover:border-blue-400"}`}
       >
         <span
           className={`truncate font-bold text-[10px] md:text-[11px] ${selectedOption ? "text-slate-700" : "text-slate-400"}`}
@@ -190,10 +190,246 @@ const CustomSelect = ({ name, value, options, onChange, placeholder }) => {
 };
 
 // ==========================================
+// 🔥 CASCADING EMPLOYEE SELECT WITH SEARCH
+// ==========================================
+const CascadingEmployeeSelect = ({
+  employeesData,
+  selectedParticipants,
+  onChange,
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [selectedDept, setSelectedDept] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
+  const dropdownRef = useRef(null);
+
+  // Dapatkan daftar departemen unik
+  const departments = useMemo(() => {
+    const depts = [
+      ...new Set(employeesData.map((emp) => emp.department).filter(Boolean)),
+    ];
+    return depts.sort();
+  }, [employeesData]);
+
+  // Filter karyawan berdasarkan Departemen & Search term
+  const filteredEmployees = useMemo(() => {
+    if (!selectedDept) return [];
+    return employeesData
+      .filter((emp) => emp.department === selectedDept)
+      .filter(
+        (emp) =>
+          emp.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          emp.id.toLowerCase().includes(searchTerm.toLowerCase()),
+      );
+  }, [employeesData, selectedDept, searchTerm]);
+
+  // Handle klik di luar untuk menutup
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target))
+        setIsOpen(false);
+    };
+    if (isOpen) document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isOpen]);
+
+  // Handle seleksi karyawan (checkbox logic)
+  const toggleEmployee = (empName) => {
+    const currentArray = selectedParticipants
+      ? selectedParticipants.split(", ").filter(Boolean)
+      : [];
+    let newArray;
+    if (currentArray.includes(empName)) {
+      newArray = currentArray.filter((name) => name !== empName);
+    } else {
+      newArray = [...currentArray, empName];
+    }
+    // Kirim event buatan seolah-olah ini input biasa
+    onChange({ target: { name: "participants", value: newArray.join(", ") } });
+  };
+
+  const handleClear = (e) => {
+    e.stopPropagation();
+    onChange({ target: { name: "participants", value: "" } });
+    setSelectedDept("");
+  };
+
+  // Teks untuk tombol dropdown
+  const displayText = selectedParticipants
+    ? selectedParticipants.split(",").length > 1
+      ? `${selectedParticipants.split(",")[0]} +${selectedParticipants.split(",").length - 1} more`
+      : selectedParticipants
+    : "Select Dept & Participants...";
+
+  return (
+    <div ref={dropdownRef} className="relative w-full">
+      <div
+        onClick={() => setIsOpen(!isOpen)}
+        className={`w-full border rounded-lg p-2 md:p-2.5 h-[36px] md:h-[38px] bg-white flex items-center justify-between cursor-pointer transition shadow-sm ${isOpen ? "border-blue-500 ring-2 ring-blue-500/20" : "border-slate-200 hover:border-blue-400"}`}
+      >
+        <span
+          className={`truncate font-bold text-[10px] md:text-[11px] ${selectedParticipants ? "text-blue-700" : "text-slate-400"}`}
+        >
+          {displayText}
+        </span>
+
+        <div className="flex items-center gap-2">
+          {selectedParticipants && (
+            <button
+              type="button"
+              onClick={handleClear}
+              className="text-slate-400 hover:text-red-500 bg-slate-100 hover:bg-red-50 rounded-full w-4 h-4 flex items-center justify-center text-[10px] transition-colors"
+            >
+              ✕
+            </button>
+          )}
+          <span
+            className={`text-[9px] text-slate-400 transition-transform duration-300 ${isOpen ? "rotate-180" : "rotate-0"}`}
+          >
+            ▼
+          </span>
+        </div>
+      </div>
+
+      {isOpen && (
+        <div className="absolute top-full left-0 w-full md:w-[250%] lg:w-[200%] mt-1 bg-white border border-slate-200 rounded-xl shadow-2xl z-[9999] overflow-hidden animate-in fade-in zoom-in-95 duration-100 flex flex-col md:flex-row h-[300px]">
+          {/* BAGIAN KIRI: Pilih Departemen */}
+          <div className="w-full md:w-1/3 border-b md:border-b-0 md:border-r border-slate-100 bg-slate-50 overflow-y-auto custom-scrollbar flex flex-col h-[100px] md:h-full shrink-0">
+            <div className="p-2 text-[9px] font-bold text-slate-400 uppercase tracking-widest bg-slate-100 sticky top-0 z-10 shadow-sm">
+              1. Department
+            </div>
+            {departments.map((dept) => (
+              <div
+                key={dept}
+                onClick={() => {
+                  setSelectedDept(dept);
+                  setSearchTerm(""); // Reset search saat ganti dept
+                }}
+                className={`px-3 py-2 text-[10px] md:text-[11px] font-bold cursor-pointer transition border-l-2 ${selectedDept === dept ? "border-blue-600 bg-white text-blue-700 shadow-sm z-0 relative" : "border-transparent hover:bg-slate-100 text-slate-600"}`}
+              >
+                {dept}
+              </div>
+            ))}
+          </div>
+
+          {/* BAGIAN KANAN: Search & Pilih Karyawan */}
+          <div className="w-full md:w-2/3 flex flex-col h-full bg-white">
+            <div className="p-2 bg-white sticky top-0 z-10 border-b border-slate-100 shadow-sm">
+              <div className="flex items-center gap-2 mb-1.5">
+                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
+                  2. Participants {selectedDept ? `(${selectedDept})` : ""}
+                </span>
+              </div>
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder={
+                    selectedDept
+                      ? "Search name or ID..."
+                      : "Select department first"
+                  }
+                  disabled={!selectedDept}
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full border border-slate-200 rounded-md py-1.5 pl-7 pr-2 text-[10px] md:text-[11px] font-medium outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 disabled:bg-slate-50 disabled:cursor-not-allowed transition-colors"
+                />
+                <svg
+                  className="w-3.5 h-3.5 absolute left-2 top-1/2 -translate-y-1/2 text-slate-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                  ></path>
+                </svg>
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto py-1 custom-scrollbar">
+              {!selectedDept ? (
+                <div className="h-full flex items-center justify-center text-[10px] md:text-[11px] text-slate-400 font-medium p-4 text-center">
+                  👈 Please select a department from the list on the left
+                </div>
+              ) : filteredEmployees.length === 0 ? (
+                <div className="h-full flex items-center justify-center text-[10px] md:text-[11px] text-slate-400 font-medium p-4 text-center">
+                  No employees found matching "{searchTerm}"
+                </div>
+              ) : (
+                filteredEmployees.map((emp) => {
+                  const currentArray = selectedParticipants
+                    ? selectedParticipants.split(", ").filter(Boolean)
+                    : [];
+                  const isChecked = currentArray.includes(emp.name);
+
+                  return (
+                    <div
+                      key={emp.id || emp.name}
+                      onClick={() => toggleEmployee(emp.name)}
+                      className="px-3 py-2 cursor-pointer transition hover:bg-slate-50 flex items-center gap-3"
+                    >
+                      <div
+                        className={`w-3.5 h-3.5 rounded border flex items-center justify-center transition-colors shrink-0 ${isChecked ? "bg-blue-500 border-blue-500" : "bg-white border-slate-300"}`}
+                      >
+                        {isChecked && (
+                          <svg
+                            className="w-2.5 h-2.5 text-white"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth="4"
+                              d="M5 13l4 4L19 7"
+                            />
+                          </svg>
+                        )}
+                      </div>
+                      <div className="flex flex-col min-w-0">
+                        <span
+                          className={`text-[10px] md:text-[11px] font-bold truncate ${isChecked ? "text-blue-700" : "text-slate-700"}`}
+                        >
+                          {emp.name}
+                        </span>
+                        {emp.id && (
+                          <span className="text-[8px] md:text-[9px] text-slate-400 font-medium tracking-wider">
+                            {emp.id}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            {/* Tombol Confirm/Tutup */}
+            <div className="p-2 border-t border-slate-100 bg-slate-50 shrink-0">
+              <button
+                type="button"
+                onClick={() => setIsOpen(false)}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-1.5 rounded-md text-[10px] transition-colors shadow-sm"
+              >
+                Confirm Selection
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ==========================================
 // MAIN COMPONENT
 // ==========================================
 export default function TrainingCalendar() {
   const [trainings, setTrainings] = useState([]);
+  const [employeesList, setEmployeesList] = useState([]); // 🔥 State untuk data Employee List
   const [isLoading, setIsLoading] = useState(true);
   const [rangeStart, setRangeStart] = useState(null);
   const [rangeEnd, setRangeEnd] = useState(null);
@@ -210,16 +446,19 @@ export default function TrainingCalendar() {
     weekNumber: "",
   });
 
-  // 🔥 FETCH DATA DARI API OPENSHEET
+  // 🔥 FETCH DATA TRAINING & EMPLOYEE LIST
   useEffect(() => {
-    const fetchTrainingData = async () => {
+    const fetchAllData = async () => {
       try {
-        const response = await fetch(
+        setIsLoading(true);
+        // Tarik Data Kalender
+        const responseCalendar = await fetch(
           "https://opensheet.elk.sh/1EkgLNCryuKRTt-0Lp5yfAUgjoc7vHNj-ZOdIScF2a1Y/Training%20Calendar",
+          { cache: "no-store" },
         );
-        const data = await response.json();
+        const dataCalendar = await responseCalendar.json();
 
-        const formattedData = data.map((item) => {
+        const formattedData = dataCalendar.map((item) => {
           const dateStr = item["Date"] || "";
           const parsedDates = parseDateRange(dateStr, 2026);
 
@@ -231,7 +470,6 @@ export default function TrainingCalendar() {
             type: item["Training Type"] || "Internal",
             dept: item["Dept"] || "",
             participants: item["Participants"] || "TBC",
-            // 🔥 MENGAMBIL STATUS DARI KOLOM "status" DI SHEET
             status: item["status"]
               ? item["status"].toLowerCase().trim()
               : "plan",
@@ -239,6 +477,41 @@ export default function TrainingCalendar() {
         });
 
         setTrainings(formattedData);
+
+        // 🔥 Tarik Data Employee List
+        const responseEmployees = await fetch(
+          "https://opensheet.elk.sh/1EkgLNCryuKRTt-0Lp5yfAUgjoc7vHNj-ZOdIScF2a1Y/Employee%20List",
+          { cache: "no-store" },
+        );
+        const dataEmployees = await responseEmployees.json();
+
+        // Format mapping data employee (sesuaikan key kolom sheet dengan yang asli)
+        // Di sini saya asumsikan kolom bernama "Name", "Department"/"Dept", dan opsional "ID"
+        const formattedEmployees = dataEmployees
+          .map((emp) => {
+            // Mencari key secara dinamis berjaga-jaga nama kolom beda huruf besar/kecil
+            const getVal = (possibleKeys) => {
+              const keys = Object.keys(emp);
+              for (let pk of possibleKeys) {
+                const match = keys.find(
+                  (k) =>
+                    k.toLowerCase().replace(/\s+/g, "") ===
+                    pk.toLowerCase().replace(/\s+/g, ""),
+                );
+                if (match) return emp[match];
+              }
+              return "";
+            };
+
+            return {
+              name: getVal(["Name", "EmployeeName", "Nama", "Participants"]),
+              department: getVal(["Department", "Dept", "Departement"]),
+              id: getVal(["ID", "NIK", "EmployeeID", "No"]) || "",
+            };
+          })
+          .filter((emp) => emp.name && emp.department); // Buang row kosong
+
+        setEmployeesList(formattedEmployees);
         setIsLoading(false);
       } catch (error) {
         console.error("Gagal menarik data dari Google Sheets:", error);
@@ -246,7 +519,7 @@ export default function TrainingCalendar() {
       }
     };
 
-    fetchTrainingData();
+    fetchAllData();
   }, []);
 
   const handleChange = (e) => {
@@ -582,7 +855,7 @@ export default function TrainingCalendar() {
                     value={form.dateRange}
                     readOnly
                     placeholder="Click on calendar above"
-                    className="w-full border border-slate-200 rounded-lg p-2 md:p-2.5 bg-blue-50/50 text-blue-700 font-bold shadow-inner"
+                    className="w-full border border-slate-200 rounded-lg p-2 md:p-2.5 bg-blue-50/50 text-blue-700 font-bold shadow-inner h-[36px] md:h-[38px]"
                     required
                   />
                 </div>
@@ -603,14 +876,14 @@ export default function TrainingCalendar() {
                       }),
                     )}
                   />
-                  <p className="text-[8px] text-slate-400 mt-1.5 uppercase font-bold tracking-widest">
+                  <p className="text-[8px] text-slate-400 mt-1.5 uppercase font-bold tracking-widest pl-1">
                     {form.dateRange || "Resulting date range will appear here"}
                   </p>
                 </div>
               )}
             </div>
 
-            <div className="grid grid-cols-2 gap-3 relative z-40">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 relative z-40">
               <div>
                 <label className="text-[9px] font-bold text-slate-500 uppercase block mb-1.5">
                   Training Type
@@ -629,34 +902,32 @@ export default function TrainingCalendar() {
               </div>
               <div>
                 <label className="text-[9px] font-bold text-slate-500 uppercase block mb-1.5">
-                  Participants
+                  Status
                 </label>
-                <input
-                  name="participants"
-                  value={form.participants}
+                <CustomSelect
+                  name="status"
+                  value={form.status}
                   onChange={handleChange}
-                  placeholder="Names or Qty..."
-                  className="w-full border border-slate-200 rounded-lg p-2 md:p-2.5 outline-none focus:ring-2 focus:ring-blue-500/20 font-bold text-slate-700 transition hover:border-blue-400 shadow-sm h-[36px] md:h-[38px]"
-                  required
+                  placeholder="Select Status"
+                  options={[
+                    { value: "plan", label: "Plan" },
+                    { value: "actual", label: "Actual" },
+                    { value: "hold", label: "On Hold" },
+                    { value: "cancelled", label: "Cancelled" },
+                  ]}
                 />
               </div>
             </div>
 
+            {/* 🔥 NEW: CASCADING EMPLOYEE SELECT */}
             <div className="relative z-30">
               <label className="text-[9px] font-bold text-slate-500 uppercase block mb-1.5">
-                Status
+                Participants (From Employee List)
               </label>
-              <CustomSelect
-                name="status"
-                value={form.status}
+              <CascadingEmployeeSelect
+                employeesData={employeesList}
+                selectedParticipants={form.participants}
                 onChange={handleChange}
-                placeholder="Select Status"
-                options={[
-                  { value: "plan", label: "Plan" },
-                  { value: "actual", label: "Actual" },
-                  { value: "hold", label: "On Hold" },
-                  { value: "cancelled", label: "Cancelled" },
-                ]}
               />
             </div>
 
@@ -694,7 +965,7 @@ export default function TrainingCalendar() {
                   <th className="p-3 md:p-4 font-bold uppercase tracking-wider text-center">
                     Type
                   </th>
-                  <th className="p-3 md:p-4 font-bold uppercase tracking-wider">
+                  <th className="p-3 md:p-4 font-bold uppercase tracking-wider max-w-[200px]">
                     Participants
                   </th>
                   <th className="p-3 md:p-4 font-bold uppercase tracking-wider text-center">
@@ -733,7 +1004,11 @@ export default function TrainingCalendar() {
                       <td className="p-3 md:p-4 text-center font-bold text-slate-600">
                         {t.type}
                       </td>
-                      <td className="p-3 md:p-4 font-medium text-slate-700">
+                      {/* 🔥 Agar text participant panjang tidak merusak tabel */}
+                      <td
+                        className="p-3 md:p-4 font-medium text-slate-700 max-w-[200px] truncate"
+                        title={t.participants}
+                      >
                         {t.participants}
                       </td>
                       <td className="p-3 md:p-4 text-center">
