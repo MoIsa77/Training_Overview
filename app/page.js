@@ -377,10 +377,10 @@ export default function Home() {
         setUsername("");
         setPassword("");
       } else {
-        setLoginError("Nama atau Password Admin salah!");
+        setLoginError("Name or password is incorrect!");
       }
     } catch (err) {
-      setLoginError("Terjadi kesalahan koneksi!");
+      setLoginError("An error occurred while connecting!");
     } finally {
       setIsLoggingIn(false);
     }
