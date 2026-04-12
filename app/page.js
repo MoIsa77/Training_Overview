@@ -218,7 +218,7 @@ const FilterDropdown = ({
 };
 
 // ==========================================
-// 🔥 KOMPONEN UPCOMING TRAINING TABLE DIKEMBALIKAN!
+// UPCOMING TRAINING TABLE
 // ==========================================
 const UpcomingTrainingTable = () => (
   <div className="bg-white rounded-2xl border border-slate-300 shadow-md p-4 flex flex-col h-full min-h-0 overflow-hidden">
@@ -279,13 +279,14 @@ export default function Home() {
   const [activePage, setActivePage] = useState("home");
   const [isHome, setIsHome] = useState(true);
 
-  // 🔥 STATE ROLE (Default: Viewer)
+  // 🔥 STATE ROLE & LOGIN DENGAN GOOGLE SHEET
   const [userRole, setUserRole] = useState("viewer");
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState("");
   const [isMounted, setIsMounted] = useState(false);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
 
   const [filters, setFilters] = useState({
     department: [],
@@ -349,17 +350,39 @@ export default function Home() {
     if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
-  // 🔥 FUNGSI LOGIN ADMIN
-  const handleLogin = (e) => {
+  // 🔥 FUNGSI LOGIN DYNAMIC (Google Sheet)
+  const handleLogin = async (e) => {
     e.preventDefault();
-    if (username === "admin" && password === "admin123") {
-      setUserRole("admin");
-      setLoginError("");
-      setShowLoginModal(false);
-      setUsername("");
-      setPassword("");
-    } else {
-      setLoginError("Invalid admin credentials!");
+    setIsLoggingIn(true);
+    setLoginError("");
+
+    try {
+      const res = await fetch(
+        "https://opensheet.elk.sh/1EkgLNCryuKRTt-0Lp5yfAUgjoc7vHNj-ZOdIScF2a1Y/Admin%20List",
+        { cache: "no-store" },
+      );
+      const currentAdmins = await res.json();
+
+      const match = currentAdmins.find(
+        (admin) =>
+          admin["Name"] &&
+          admin["Name"].toLowerCase().trim() ===
+            username.toLowerCase().trim() &&
+          String(admin["Password"]) === String(password),
+      );
+
+      if (match) {
+        setUserRole("admin");
+        setShowLoginModal(false);
+        setUsername("");
+        setPassword("");
+      } else {
+        setLoginError("Nama atau Password Admin salah!");
+      }
+    } catch (err) {
+      setLoginError("Terjadi kesalahan koneksi!");
+    } finally {
+      setIsLoggingIn(false);
     }
   };
 
@@ -532,6 +555,7 @@ export default function Home() {
         </div>
         <div className="flex-1 w-full flex flex-col lg:flex-row gap-3 md:gap-4 min-h-0 overflow-y-auto lg:overflow-hidden pb-10 lg:pb-0 relative z-10">
           <div className="w-full lg:w-[30%] lg:min-w-[280px] lg:max-w-[380px] shrink-0 flex flex-col min-h-[600px] lg:min-h-0">
+            {/* 🔥 Passing Filter Gender ke MandaysSummary */}
             <MandaysSummary
               filters={filters}
               genderFilter={genderFilter}
@@ -540,6 +564,7 @@ export default function Home() {
           </div>
           <div className="flex-1 w-full flex flex-col gap-3 md:gap-4 min-w-0">
             <div className="flex-1 flex flex-col min-h-0 relative z-30">
+              {/* 🔥 Passing Filter Gender ke TrainingAnalytics */}
               <TrainingAnalytics
                 filters={filters}
                 genderFilter={genderFilter}
@@ -726,7 +751,7 @@ export default function Home() {
       </div>
 
       {/* ========================================== */}
-      {/* 🔥 MODAL LOGIN ADMIN */}
+      {/* 🔥 MODAL LOGIN ADMIN DENGAN VERIFIKASI SHEET */}
       {/* ========================================== */}
       {isMounted &&
         showLoginModal &&
@@ -766,19 +791,20 @@ export default function Home() {
                 Admin Access
               </h3>
               <p className="text-center text-xs font-bold text-slate-400 mb-6">
-                Enter credentials to unlock edit features
+                Enter Full Name & Password
               </p>
 
               <form onSubmit={handleLogin} className="flex flex-col gap-4">
                 <div>
                   <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">
-                    Username
+                    Full Name
                   </label>
                   <input
                     type="text"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                     className="w-full border border-slate-200 bg-slate-50 px-4 py-2.5 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 font-medium text-slate-700 transition"
+                    placeholder="e.g. Johnson Panggabean"
                     required
                   />
                 </div>
@@ -791,27 +817,24 @@ export default function Home() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className="w-full border border-slate-200 bg-slate-50 px-4 py-2.5 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 font-medium text-slate-700 transition"
+                    placeholder="••••••••"
                     required
                   />
                 </div>
                 {loginError && (
-                  <p className="text-red-500 text-xs font-bold text-center mt-1">
+                  <p className="text-red-500 text-[10px] font-bold text-center mt-1 bg-red-50 p-2 rounded-lg">
                     {loginError}
                   </p>
                 )}
 
                 <button
                   type="submit"
-                  className="mt-2 w-full bg-blue-600 hover:bg-blue-700 text-white font-black uppercase tracking-widest py-3 rounded-xl transition shadow-lg shadow-blue-500/30 active:scale-95"
+                  disabled={isLoggingIn}
+                  className="mt-2 w-full bg-blue-600 hover:bg-blue-700 text-white font-black uppercase tracking-widest py-3 rounded-xl transition shadow-lg shadow-blue-500/30 active:scale-95 disabled:opacity-50"
                 >
-                  Unlock Form
+                  {isLoggingIn ? "Verifying..." : "Login as Admin"}
                 </button>
               </form>
-
-              <p className="text-center text-[10px] font-medium text-slate-400 mt-6 border-t border-slate-100 pt-4">
-                Demo: <b className="text-slate-600">admin</b> /{" "}
-                <b className="text-slate-600">admin123</b>
-              </p>
             </div>
           </div>,
           document.body,
