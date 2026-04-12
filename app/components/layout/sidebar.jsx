@@ -1,13 +1,26 @@
 "use client";
 
 import React from "react";
-import { Home, PieChart, ClipboardList, Grid, Calendar, X } from "lucide-react";
+import {
+  Home,
+  PieChart,
+  ClipboardList,
+  Grid,
+  Calendar,
+  X,
+  Lock,
+  Unlock,
+} from "lucide-react";
 
 export default function Sidebar({
   mobileOpen,
   setMobileOpen,
   activePage,
   setActivePage,
+  // 🔥 TERIMA PROPS BARU DARI PAGE.JS
+  userRole = "viewer",
+  setShowLoginModal,
+  handleLogout,
 }) {
   const menuItems = [
     {
@@ -55,8 +68,6 @@ export default function Sidebar({
   const handleNavClick = (id) => {
     setActivePage(id);
     setMobileOpen(false);
-
-    // Delay disamakan dengan durasi animasi yang baru (300ms) agar terasa snappy
     setTimeout(() => {
       const el = document.getElementById(id);
       if (el) {
@@ -67,8 +78,6 @@ export default function Sidebar({
 
   return (
     <>
-      {/* 1. LAYER BACKDROP (Layar Gelap Transparan) */}
-      {/* 🔥 FIX: Hapus backdrop-blur dan ubah durasi ke 300ms agar sangat ringan di HP */}
       <div
         className={`fixed inset-0 bg-[#0f172a]/40 z-[99995] transition-opacity duration-300 ease-out md:hidden ${
           mobileOpen
@@ -78,17 +87,13 @@ export default function Sidebar({
         onClick={() => setMobileOpen(false)}
       ></div>
 
-      {/* 2. LACI SIDEBAR (Slide dari Kanan) */}
-      {/* 🔥 FIX: Durasi dipercepat jadi 300ms & tambah will-change untuk Hardware Acceleration */}
       <aside
         className={`fixed top-0 right-0 h-[100dvh] w-[280px] bg-white shadow-2xl z-[99999] transform transition-transform duration-300 ease-out flex flex-col ${
           mobileOpen ? "translate-x-0" : "translate-x-full"
         }`}
         style={{ willChange: "transform" }}
       >
-        {/* HEADER SIDEBAR */}
-        <div className="flex items-center justify-between p-6 border-b border-slate-100">
-          {/* 🔥 FIX: Menggunakan Logo Filtrona Colorg sesuai permintaan */}
+        <div className="flex items-center justify-between p-6 border-b border-slate-100 shrink-0">
           <img
             src="/filtrona-logo-colorg.png"
             alt="Filtrona"
@@ -98,7 +103,6 @@ export default function Sidebar({
                 "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR_p_G5_JpQ2ZfE9J9m9P9P9P9P9P9P9P9P9A&s";
             }}
           />
-
           <button
             onClick={() => setMobileOpen(false)}
             className="p-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-full transition-colors active:scale-95"
@@ -107,11 +111,9 @@ export default function Sidebar({
           </button>
         </div>
 
-        {/* LIST TOMBOL MENU */}
-        <div className="flex-1 overflow-y-auto py-4 px-3 flex flex-col gap-2">
+        <div className="flex-1 overflow-y-auto py-4 px-3 flex flex-col gap-2 custom-scrollbar">
           {menuItems.map((item) => {
             const isActive = activePage === item.id;
-
             return (
               <button
                 key={item.id}
@@ -132,7 +134,58 @@ export default function Sidebar({
             );
           })}
         </div>
+
+        {/* ========================================== */}
+        {/* 🔥 ADMIN LOGIN BUTTON (DI BAGIAN BAWAH SIDEBAR) */}
+        {/* ========================================== */}
+        <div className="p-4 border-t border-slate-100 shrink-0 bg-slate-50 mt-auto">
+          {userRole === "viewer" ? (
+            <button
+              onClick={() => {
+                setMobileOpen(false); // Tutup sidebar
+                setShowLoginModal(true); // Buka modal login
+              }}
+              className="flex items-center justify-center gap-3 w-full p-3 rounded-xl transition-all duration-300 bg-white border border-slate-200 text-slate-500 hover:text-blue-600 hover:border-blue-200 hover:bg-blue-50 shadow-sm active:scale-[0.98] group"
+            >
+              <Lock size={18} className="group-hover:hidden transition-all" />
+              <Unlock
+                size={18}
+                className="hidden group-hover:block transition-all"
+              />
+              <span className="text-xs font-bold uppercase tracking-widest">
+                Admin Login
+              </span>
+            </button>
+          ) : (
+            <button
+              onClick={() => {
+                handleLogout();
+                setMobileOpen(false);
+              }}
+              className="flex items-center justify-center gap-3 w-full p-3 rounded-xl transition-all duration-300 bg-red-50 border border-red-100 text-red-600 hover:bg-red-600 hover:text-white shadow-sm active:scale-[0.98] group"
+            >
+              <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse group-hover:bg-white"></div>
+              <span className="text-xs font-bold uppercase tracking-widest">
+                Logout Admin
+              </span>
+            </button>
+          )}
+        </div>
       </aside>
+
+      <style jsx>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 4px;
+          height: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: #cbd5e1;
+          border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: transparent;
+        }
+      `}</style>
     </>
   );
 }

@@ -406,11 +406,16 @@ export default function Home() {
         resetFilters={resetFilters}
         activePage={activePage}
       />
+
+      {/* 🔥 PASSING STATE KE SIDEBAR */}
       <Sidebar
         mobileOpen={mobileOpen}
         setMobileOpen={setMobileOpen}
         activePage={activePage}
         setActivePage={setActivePage}
+        userRole={userRole}
+        setShowLoginModal={setShowLoginModal}
+        handleLogout={handleLogout}
       />
 
       <section
@@ -555,7 +560,6 @@ export default function Home() {
         </div>
         <div className="flex-1 w-full flex flex-col lg:flex-row gap-3 md:gap-4 min-h-0 overflow-y-auto lg:overflow-hidden pb-10 lg:pb-0 relative z-10">
           <div className="w-full lg:w-[30%] lg:min-w-[280px] lg:max-w-[380px] shrink-0 flex flex-col min-h-[600px] lg:min-h-0">
-            {/* 🔥 Passing Filter Gender ke MandaysSummary */}
             <MandaysSummary
               filters={filters}
               genderFilter={genderFilter}
@@ -564,14 +568,12 @@ export default function Home() {
           </div>
           <div className="flex-1 w-full flex flex-col gap-3 md:gap-4 min-w-0">
             <div className="flex-1 flex flex-col min-h-0 relative z-30">
-              {/* 🔥 Passing Filter Gender ke TrainingAnalytics */}
               <TrainingAnalytics
                 filters={filters}
                 genderFilter={genderFilter}
               />
             </div>
 
-            {/* 🔥 TABEL UPCOMING TRAINING KEMBALI DIMUNCULKAN DI BAWAH GRAFIK */}
             <div className="h-[250px] lg:h-[35%] lg:min-h-[180px] shrink-0 relative z-20">
               <UpcomingTrainingTable />
             </div>
@@ -703,54 +705,6 @@ export default function Home() {
       </section>
 
       {/* ========================================== */}
-      {/* 🔥 FLOATING ADMIN LOGIN BUTTON */}
-      {/* ========================================== */}
-      <div className="fixed bottom-6 right-6 z-[99999] flex flex-col items-end">
-        {userRole === "viewer" ? (
-          <button
-            onClick={() => setShowLoginModal(true)}
-            className="w-12 h-12 bg-white text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-full shadow-lg border border-slate-200 flex items-center justify-center transition-all hover:scale-110 active:scale-95 group"
-            title="Login as Admin"
-          >
-            <svg
-              className="w-5 h-5 group-hover:hidden"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-              ></path>
-            </svg>
-            <svg
-              className="w-5 h-5 hidden group-hover:block"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"
-              ></path>
-            </svg>
-          </button>
-        ) : (
-          <button
-            onClick={handleLogout}
-            className="px-4 py-2.5 bg-red-100 text-red-600 hover:bg-red-600 hover:text-white rounded-full shadow-lg border border-red-200 font-bold text-[10px] uppercase tracking-widest transition-all hover:scale-105 active:scale-95 flex items-center gap-2"
-          >
-            <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-            Logout Admin
-          </button>
-        )}
-      </div>
-
-      {/* ========================================== */}
       {/* 🔥 MODAL LOGIN ADMIN DENGAN VERIFIKASI SHEET */}
       {/* ========================================== */}
       {isMounted &&
@@ -791,7 +745,7 @@ export default function Home() {
                 Admin Access
               </h3>
               <p className="text-center text-xs font-bold text-slate-400 mb-6">
-                Enter Full Name & Password
+                Enter full name & password
               </p>
 
               <form onSubmit={handleLogin} className="flex flex-col gap-4">
@@ -832,7 +786,7 @@ export default function Home() {
                   disabled={isLoggingIn}
                   className="mt-2 w-full bg-blue-600 hover:bg-blue-700 text-white font-black uppercase tracking-widest py-3 rounded-xl transition shadow-lg shadow-blue-500/30 active:scale-95 disabled:opacity-50"
                 >
-                  {isLoggingIn ? "Verifying..." : "Login as Admin"}
+                  {isLoggingIn ? "Verifying..." : "login"}
                 </button>
               </form>
             </div>
