@@ -217,6 +217,9 @@ const FilterDropdown = ({
   );
 };
 
+// ==========================================
+// 🔥 KOMPONEN UPCOMING TRAINING TABLE DIKEMBALIKAN!
+// ==========================================
 const UpcomingTrainingTable = () => (
   <div className="bg-white rounded-2xl border border-slate-300 shadow-md p-4 flex flex-col h-full min-h-0 overflow-hidden">
     <div className="flex items-center gap-2 mb-3 shrink-0">
@@ -276,7 +279,14 @@ export default function Home() {
   const [activePage, setActivePage] = useState("home");
   const [isHome, setIsHome] = useState(true);
 
-  // 🔥 INI DIA KABEL PENGHUBUNGNYA (State Global)
+  // 🔥 STATE ROLE (Default: Viewer)
+  const [userRole, setUserRole] = useState("viewer");
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [loginError, setLoginError] = useState("");
+  const [isMounted, setIsMounted] = useState(false);
+
   const [filters, setFilters] = useState({
     department: [],
     trainingType: [],
@@ -300,6 +310,7 @@ export default function Home() {
   };
 
   useEffect(() => {
+    setIsMounted(true);
     const scrollContainer = document.getElementById("main-scroll");
     if (!scrollContainer) return;
 
@@ -338,6 +349,24 @@ export default function Home() {
     if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
+  // 🔥 FUNGSI LOGIN ADMIN
+  const handleLogin = (e) => {
+    e.preventDefault();
+    if (username === "admin" && password === "admin123") {
+      setUserRole("admin");
+      setLoginError("");
+      setShowLoginModal(false);
+      setUsername("");
+      setPassword("");
+    } else {
+      setLoginError("Invalid admin credentials!");
+    }
+  };
+
+  const handleLogout = () => {
+    setUserRole("viewer");
+  };
+
   return (
     <div
       id="main-scroll"
@@ -361,15 +390,11 @@ export default function Home() {
         setActivePage={setActivePage}
       />
 
-      {/* ========================================== */}
-      {/* 🔥 FIX: SECTION HOME DENGAN BACKGROUND VIDEO */}
-      {/* ========================================== */}
       <section
         id="home"
         className="relative w-full flex flex-col items-center justify-center overflow-hidden z-10"
         style={{ height: "100dvh" }}
       >
-        {/* TAG VIDEO SEBAGAI BACKGROUND */}
         <video
           autoPlay
           muted
@@ -380,10 +405,8 @@ export default function Home() {
           <source src="/bgvid.mp4" type="video/mp4" />
         </video>
 
-        {/* OVERLAY GELAP (Agar teks putih tetap terbaca di atas video) */}
         <div className="absolute inset-0 bg-black/40 z-10 pointer-events-none" />
 
-        {/* KONTEN TEKS & TOMBOL */}
         <div className="relative z-40 text-center max-w-2xl px-6 text-white pointer-events-auto flex flex-col items-center">
           <h1 className="text-4xl md:text-5xl font-bold mb-6 md:mb-8 leading-tight uppercase tracking-wide">
             CORPORATE TRAINING OVERVIEW
@@ -509,7 +532,6 @@ export default function Home() {
         </div>
         <div className="flex-1 w-full flex flex-col lg:flex-row gap-3 md:gap-4 min-h-0 overflow-y-auto lg:overflow-hidden pb-10 lg:pb-0 relative z-10">
           <div className="w-full lg:w-[30%] lg:min-w-[280px] lg:max-w-[380px] shrink-0 flex flex-col min-h-[600px] lg:min-h-0">
-            {/* 🔥 Passing Filter Gender ke MandaysSummary */}
             <MandaysSummary
               filters={filters}
               genderFilter={genderFilter}
@@ -518,12 +540,13 @@ export default function Home() {
           </div>
           <div className="flex-1 w-full flex flex-col gap-3 md:gap-4 min-w-0">
             <div className="flex-1 flex flex-col min-h-0 relative z-30">
-              {/* 🔥 Passing Filter Gender ke TrainingAnalytics */}
               <TrainingAnalytics
                 filters={filters}
                 genderFilter={genderFilter}
               />
             </div>
+
+            {/* 🔥 TABEL UPCOMING TRAINING KEMBALI DIMUNCULKAN DI BAWAH GRAFIK */}
             <div className="h-[250px] lg:h-[35%] lg:min-h-[180px] shrink-0 relative z-20">
               <UpcomingTrainingTable />
             </div>
@@ -541,18 +564,13 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ========================================== */}
-      {/* 🔥 FIX: MATRIX COMPETENCY DENGAN ANIMASI SVG CUSTOM */}
-      {/* ========================================== */}
       <section
         id="matrix-competency"
         className="bg-[#f1f5f9] pt-[80px] md:pt-[90px] pb-4 px-3 md:px-5 overflow-hidden z-20 relative flex items-center justify-center"
         style={{ height: "100dvh" }}
       >
         <div className="text-center bg-white p-10 md:p-16 rounded-3xl shadow-xl border border-slate-200 max-w-lg w-full relative overflow-hidden group">
-          {/* --- ANIMASI ORANG PROYEK MULAI DI SINI --- */}
           <div className="relative w-56 h-48 mx-auto flex items-end justify-center mb-8">
-            {/* Papan Matrix (Background) */}
             <svg
               className="absolute top-0 left-6 w-32 h-32 text-slate-200"
               fill="currentColor"
@@ -569,8 +587,6 @@ export default function Home() {
               <rect x="10" y="16" width="4" height="4" fill="#f59e0b" />
               <rect x="16" y="16" width="4" height="4" fill="#cbd5e1" />
             </svg>
-
-            {/* Gear Berputar Besar */}
             <svg
               className="absolute top-2 right-4 w-12 h-12 text-slate-300 animate-[spin_4s_linear_infinite]"
               viewBox="0 0 24 24"
@@ -592,31 +608,6 @@ export default function Home() {
                 strokeWidth="2"
               ></circle>
             </svg>
-
-            {/* Gear Berputar Kecil (Arah Sebaliknya) */}
-            <svg
-              className="absolute top-12 right-0 w-8 h-8 text-slate-400 animate-[spin_3s_linear_infinite_reverse]"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-              ></path>
-              <circle
-                cx="12"
-                cy="12"
-                r="3"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-              ></circle>
-            </svg>
-
-            {/* Orang Proyek (Bouncing) */}
             <div
               className="relative z-10 animate-bounce"
               style={{ animationDuration: "2s" }}
@@ -626,17 +617,13 @@ export default function Home() {
                 viewBox="0 0 64 64"
                 fill="none"
               >
-                {/* Tubuh / Rompi Safety */}
                 <path
                   d="M16 60v-8c0-6.6 5.4-12 12-12h8c6.6 0 12 5.4 12 12v8"
                   fill="#fb923c"
                 />
                 <path d="M22 40l-6 20h32l-6-20" fill="#ea580c" />
-                {/* Garis Reflektif Rompi */}
                 <path d="M24 40v20M40 40v20" stroke="#fcd34d" strokeWidth="3" />
-                {/* Kepala */}
                 <circle cx="32" cy="24" r="10" fill="#fca5a5" />
-                {/* Helm Proyek */}
                 <path
                   d="M32 6c-6.6 0-12 5.4-12 12v2h24v-2c0-6.6-5.4-12-12-12z"
                   fill="#eab308"
@@ -644,8 +631,6 @@ export default function Home() {
                 <path d="M18 20h28v4H18z" fill="#ca8a04" />
               </svg>
             </div>
-
-            {/* Kertas Blueprint / Matrix (Pulsing) */}
             <div
               className="absolute bottom-2 left-8 z-20 animate-pulse"
               style={{ animationDuration: "1.5s" }}
@@ -659,15 +644,12 @@ export default function Home() {
               </svg>
             </div>
           </div>
-          {/* --- ANIMASI ORANG PROYEK SELESAI --- */}
-
           <h1 className="text-2xl md:text-4xl font-black text-slate-800">
             MATRIX COMPETENCY
           </h1>
           <p className="text-slate-400 mt-3 font-bold uppercase tracking-widest text-xs md:text-sm">
             Under Construction
           </p>
-
           <div className="mt-6 flex justify-center gap-2">
             <div
               className="w-2 h-2 rounded-full bg-blue-500 animate-bounce"
@@ -691,9 +673,149 @@ export default function Home() {
         style={{ height: "100dvh" }}
       >
         <div className="h-full w-full">
-          <TrainingCalendar />
+          <TrainingCalendar userRole={userRole} />
         </div>
       </section>
+
+      {/* ========================================== */}
+      {/* 🔥 FLOATING ADMIN LOGIN BUTTON */}
+      {/* ========================================== */}
+      <div className="fixed bottom-6 right-6 z-[99999] flex flex-col items-end">
+        {userRole === "viewer" ? (
+          <button
+            onClick={() => setShowLoginModal(true)}
+            className="w-12 h-12 bg-white text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-full shadow-lg border border-slate-200 flex items-center justify-center transition-all hover:scale-110 active:scale-95 group"
+            title="Login as Admin"
+          >
+            <svg
+              className="w-5 h-5 group-hover:hidden"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+              ></path>
+            </svg>
+            <svg
+              className="w-5 h-5 hidden group-hover:block"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"
+              ></path>
+            </svg>
+          </button>
+        ) : (
+          <button
+            onClick={handleLogout}
+            className="px-4 py-2.5 bg-red-100 text-red-600 hover:bg-red-600 hover:text-white rounded-full shadow-lg border border-red-200 font-bold text-[10px] uppercase tracking-widest transition-all hover:scale-105 active:scale-95 flex items-center gap-2"
+          >
+            <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+            Logout Admin
+          </button>
+        )}
+      </div>
+
+      {/* ========================================== */}
+      {/* 🔥 MODAL LOGIN ADMIN */}
+      {/* ========================================== */}
+      {isMounted &&
+        showLoginModal &&
+        createPortal(
+          <div className="fixed inset-0 z-[1000000] flex items-center justify-center p-4 pointer-events-auto">
+            <div
+              className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+              onClick={() => setShowLoginModal(false)}
+            ></div>
+            <div className="relative bg-white w-full max-w-sm rounded-3xl shadow-2xl p-8 animate-in fade-in zoom-in-95 duration-200">
+              <button
+                onClick={() => setShowLoginModal(false)}
+                className="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-50 text-slate-400 hover:text-red-500 flex items-center justify-center transition-colors"
+              >
+                ✕
+              </button>
+
+              <div className="flex justify-center mb-4">
+                <div className="w-14 h-14 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center">
+                  <svg
+                    className="w-7 h-7"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                    ></path>
+                  </svg>
+                </div>
+              </div>
+
+              <h3 className="text-center font-black text-xl text-slate-800 uppercase tracking-widest mb-1">
+                Admin Access
+              </h3>
+              <p className="text-center text-xs font-bold text-slate-400 mb-6">
+                Enter credentials to unlock edit features
+              </p>
+
+              <form onSubmit={handleLogin} className="flex flex-col gap-4">
+                <div>
+                  <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">
+                    Username
+                  </label>
+                  <input
+                    type="text"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    className="w-full border border-slate-200 bg-slate-50 px-4 py-2.5 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 font-medium text-slate-700 transition"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">
+                    Password
+                  </label>
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full border border-slate-200 bg-slate-50 px-4 py-2.5 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 font-medium text-slate-700 transition"
+                    required
+                  />
+                </div>
+                {loginError && (
+                  <p className="text-red-500 text-xs font-bold text-center mt-1">
+                    {loginError}
+                  </p>
+                )}
+
+                <button
+                  type="submit"
+                  className="mt-2 w-full bg-blue-600 hover:bg-blue-700 text-white font-black uppercase tracking-widest py-3 rounded-xl transition shadow-lg shadow-blue-500/30 active:scale-95"
+                >
+                  Unlock Form
+                </button>
+              </form>
+
+              <p className="text-center text-[10px] font-medium text-slate-400 mt-6 border-t border-slate-100 pt-4">
+                Demo: <b className="text-slate-600">admin</b> /{" "}
+                <b className="text-slate-600">admin123</b>
+              </p>
+            </div>
+          </div>,
+          document.body,
+        )}
     </div>
   );
 }

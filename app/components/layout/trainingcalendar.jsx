@@ -19,9 +19,6 @@ const months = [
 ];
 const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-// ==========================================
-// HELPER FUNCTIONS
-// ==========================================
 function getDateRangeFromWeek(week, year = 2026) {
   const firstDayOfYear = new Date(year, 0, 1);
   const daysOffset =
@@ -31,7 +28,6 @@ function getDateRangeFromWeek(week, year = 2026) {
     firstMonday.getTime() + (week - 1) * 7 * 24 * 60 * 60 * 1000,
   );
   const end = new Date(start.getTime() + 6 * 24 * 60 * 60 * 1000);
-
   const format = (d) =>
     `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
   return {
@@ -97,13 +93,11 @@ function isSameDate(d1, d2) {
 function parseDateRange(dateStr, year = 2026) {
   if (!dateStr) return { startDate: "", endDate: "" };
   const str = dateStr.toString().trim();
-
   const weekMatch = str.match(/Week\s+(\d+)/i);
   if (weekMatch) {
     const range = getDateRangeFromWeek(parseInt(weekMatch[1]), year);
     return { startDate: range.start, endDate: range.end };
   }
-
   const dateMatch = str.match(/(\d+)\s*-\s*(\d+)\s+([a-zA-Z]+)/);
   if (dateMatch) {
     const startDay = parseInt(dateMatch[1]);
@@ -112,7 +106,6 @@ function parseDateRange(dateStr, year = 2026) {
     const monthIndex = months.findIndex(
       (m) => m.toLowerCase() === monthStr.toLowerCase(),
     );
-
     if (monthIndex !== -1) {
       const sDate = new Date(year, monthIndex, startDay);
       const eDate = new Date(year, monthIndex, endDay);
@@ -121,13 +114,9 @@ function parseDateRange(dateStr, year = 2026) {
       return { startDate: format(sDate), endDate: format(eDate) };
     }
   }
-
   return { startDate: "", endDate: "" };
 }
 
-// ==========================================
-// CUSTOM SELECT COMPONENT
-// ==========================================
 const CustomSelect = ({ name, value, options, onChange, placeholder }) => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
@@ -190,9 +179,6 @@ const CustomSelect = ({ name, value, options, onChange, placeholder }) => {
   );
 };
 
-// ==========================================
-// CASCADING EMPLOYEE SELECT WITH SEARCH
-// ==========================================
 const CascadingEmployeeSelect = ({
   employeesData,
   selectedParticipants,
@@ -419,7 +405,8 @@ const CascadingEmployeeSelect = ({
 // ==========================================
 // MAIN COMPONENT
 // ==========================================
-export default function TrainingCalendar() {
+// 🔥 PENAMBAHAN PROP userRole
+export default function TrainingCalendar({ userRole = "viewer" }) {
   const [trainings, setTrainings] = useState([]);
   const [employeesList, setEmployeesList] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -528,6 +515,9 @@ export default function TrainingCalendar() {
   };
 
   function handleDateClick(date) {
+    // 🔥 CEGAH KLIK JIKA VIEWER
+    if (userRole !== "admin") return;
+
     if (inputMode === "week") setInputMode("date");
 
     if (!rangeStart || (rangeStart && rangeEnd)) {
@@ -568,6 +558,8 @@ export default function TrainingCalendar() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    if (userRole !== "admin") return;
+
     setTrainings([...trainings, form]);
     setForm({
       title: "",
@@ -615,12 +607,11 @@ export default function TrainingCalendar() {
             isDateInRange(dateKey, t.startDate, t.endDate),
           );
 
-          let cellStyle =
-            "cursor-pointer text-[8px] md:text-[9px] text-center h-full w-full flex items-center justify-center transition relative group ";
+          let cellStyle = `text-[8px] md:text-[9px] text-center h-full w-full flex items-center justify-center transition relative group ${userRole === "admin" ? "cursor-pointer" : "cursor-default"}`;
           const layers = [];
 
           let isDraftActive = false;
-          if (inputMode === "date" && rangeStart) {
+          if (userRole === "admin" && inputMode === "date" && rangeStart) {
             const currentD = new Date(dateKey);
             const startD = new Date(rangeStart);
             const endD = rangeEnd ? new Date(rangeEnd) : new Date(rangeStart);
@@ -682,7 +673,11 @@ export default function TrainingCalendar() {
           else
             textStyle += "text-slate-700 font-medium group-hover:text-black ";
 
-          if (!isDraftActive && dayTrainings.length === 0)
+          if (
+            !isDraftActive &&
+            dayTrainings.length === 0 &&
+            userRole === "admin"
+          )
             cellStyle += "hover:bg-slate-100 ";
 
           weekCells.push(
@@ -763,173 +758,182 @@ export default function TrainingCalendar() {
 
       {/* SECTION FORM & DETAILS */}
       <div className="flex flex-col lg:flex-row gap-3 md:gap-4 mt-2 w-full shrink-0">
-        {/* INPUT FORM (KIRI) */}
-        <div className="bg-white p-4 md:p-5 rounded-2xl border border-slate-200 shadow-md w-full lg:w-[32%] flex flex-col h-fit">
-          <div className="flex flex-wrap sm:flex-nowrap items-center justify-between mb-4 border-b border-slate-100 pb-3 gap-3">
-            <div className="flex items-center gap-1.5 shrink-0 min-w-min">
-              <h2 className="text-xs md:text-sm font-black text-slate-800 uppercase tracking-tight whitespace-nowrap">
-                Input Training
-              </h2>
-              <div className="flex gap-1 md:gap-1.5 ml-1 shrink-0">
-                <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
-                <div className="w-1.5 h-1.5 rounded-full bg-green-500"></div>
-                <div className="w-1.5 h-1.5 rounded-full bg-red-500"></div>
+        {/* 🔥 TAMPILKAN INPUT FORM HANYA UNTUK ADMIN */}
+        {userRole === "admin" && (
+          <div className="bg-white p-4 md:p-5 rounded-2xl border border-slate-200 shadow-md w-full lg:w-[32%] flex flex-col h-fit">
+            <div className="flex flex-wrap sm:flex-nowrap items-center justify-between mb-4 border-b border-slate-100 pb-3 gap-3">
+              <div className="flex items-center gap-1.5 shrink-0 min-w-min">
+                <h2 className="text-xs md:text-sm font-black text-slate-800 uppercase tracking-tight whitespace-nowrap">
+                  Input Training
+                </h2>
+                <div className="flex gap-1 md:gap-1.5 ml-1 shrink-0">
+                  <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
+                  <div className="w-1.5 h-1.5 rounded-full bg-green-500"></div>
+                  <div className="w-1.5 h-1.5 rounded-full bg-red-500"></div>
+                </div>
+              </div>
+
+              <div className="flex gap-1.5 md:gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setInputMode("date");
+                    setRangeStart(null);
+                    setRangeEnd(null);
+                    setForm({
+                      ...form,
+                      dateRange: "",
+                      startDate: "",
+                      endDate: "",
+                    });
+                  }}
+                  className={`text-[8px] md:text-[9px] px-2 md:px-3 py-1 md:py-1.5 rounded-full font-black transition shadow-sm ${inputMode === "date" ? "bg-blue-600 text-white" : "bg-slate-100 text-slate-400 hover:bg-slate-200"}`}
+                >
+                  BY DATE
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setInputMode("week");
+                    setRangeStart(null);
+                    setRangeEnd(null);
+                    setForm({
+                      ...form,
+                      dateRange: "",
+                      startDate: "",
+                      endDate: "",
+                    });
+                  }}
+                  className={`text-[8px] md:text-[9px] px-2 md:px-3 py-1 md:py-1.5 rounded-full font-black transition shadow-sm ${inputMode === "week" ? "bg-blue-600 text-white" : "bg-slate-100 text-slate-400 hover:bg-slate-200"}`}
+                >
+                  BY WEEK
+                </button>
               </div>
             </div>
 
-            <div className="flex gap-1.5 md:gap-2 shrink-0">
-              <button
-                type="button"
-                onClick={() => {
-                  setInputMode("date");
-                  setRangeStart(null);
-                  setRangeEnd(null);
-                  setForm({
-                    ...form,
-                    dateRange: "",
-                    startDate: "",
-                    endDate: "",
-                  });
-                }}
-                className={`text-[8px] md:text-[9px] px-2 md:px-3 py-1 md:py-1.5 rounded-full font-black transition shadow-sm ${inputMode === "date" ? "bg-blue-600 text-white" : "bg-slate-100 text-slate-400 hover:bg-slate-200"}`}
-              >
-                BY DATE
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setInputMode("week");
-                  setRangeStart(null);
-                  setRangeEnd(null);
-                  setForm({
-                    ...form,
-                    dateRange: "",
-                    startDate: "",
-                    endDate: "",
-                  });
-                }}
-                className={`text-[8px] md:text-[9px] px-2 md:px-3 py-1 md:py-1.5 rounded-full font-black transition shadow-sm ${inputMode === "week" ? "bg-blue-600 text-white" : "bg-slate-100 text-slate-400 hover:bg-slate-200"}`}
-              >
-                BY WEEK
-              </button>
-            </div>
-          </div>
+            <form
+              onSubmit={handleSubmit}
+              className="flex flex-col gap-3 md:gap-4 text-[11px]"
+            >
+              <div>
+                <label className="text-[9px] font-bold text-slate-500 uppercase block mb-1.5">
+                  Training Title
+                </label>
+                <input
+                  name="title"
+                  value={form.title}
+                  onChange={handleChange}
+                  placeholder="Enter training title..."
+                  className="w-full border border-slate-200 rounded-lg p-2 md:p-2.5 outline-none focus:ring-2 focus:ring-blue-500/20 text-slate-700 font-bold transition hover:border-blue-400 shadow-sm"
+                  required
+                />
+              </div>
 
-          <form
-            onSubmit={handleSubmit}
-            className="flex flex-col gap-3 md:gap-4 text-[11px]"
-          >
-            <div>
-              <label className="text-[9px] font-bold text-slate-500 uppercase block mb-1.5">
-                Training Title
-              </label>
-              <input
-                name="title"
-                value={form.title}
-                onChange={handleChange}
-                placeholder="Enter training title..."
-                className="w-full border border-slate-200 rounded-lg p-2 md:p-2.5 outline-none focus:ring-2 focus:ring-blue-500/20 text-slate-700 font-bold transition hover:border-blue-400 shadow-sm"
-                required
-              />
-            </div>
+              <div className="grid grid-cols-2 gap-3">
+                {inputMode === "date" ? (
+                  <div className="col-span-2">
+                    <label className="text-[9px] font-bold text-slate-500 uppercase block mb-1.5">
+                      Date Selection
+                    </label>
+                    <input
+                      name="dateRange"
+                      value={form.dateRange}
+                      readOnly
+                      placeholder="Click on calendar above"
+                      className="w-full border border-slate-200 rounded-lg p-2 md:p-2.5 bg-blue-50/50 text-blue-700 font-bold shadow-inner h-[36px] md:h-[38px]"
+                      required
+                    />
+                  </div>
+                ) : (
+                  <div className="col-span-2 relative z-50">
+                    <label className="text-[9px] font-bold text-slate-500 uppercase block mb-1.5">
+                      Select Week
+                    </label>
+                    <CustomSelect
+                      name="weekNumber"
+                      value={form.weekNumber}
+                      onChange={handleChange}
+                      placeholder="-- Choose a week --"
+                      options={Array.from({ length: 53 }, (_, i) => i + 1).map(
+                        (w) => ({
+                          value: String(w),
+                          label: getDateRangeFromWeek(w, 2026).label,
+                        }),
+                      )}
+                    />
+                    <p className="text-[8px] text-slate-400 mt-1.5 uppercase font-bold tracking-widest pl-1">
+                      {form.dateRange ||
+                        "Resulting date range will appear here"}
+                    </p>
+                  </div>
+                )}
+              </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              {inputMode === "date" ? (
-                <div className="col-span-2">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 relative z-40">
+                <div>
                   <label className="text-[9px] font-bold text-slate-500 uppercase block mb-1.5">
-                    Date Selection
-                  </label>
-                  <input
-                    name="dateRange"
-                    value={form.dateRange}
-                    readOnly
-                    placeholder="Click on calendar above"
-                    className="w-full border border-slate-200 rounded-lg p-2 md:p-2.5 bg-blue-50/50 text-blue-700 font-bold shadow-inner h-[36px] md:h-[38px]"
-                    required
-                  />
-                </div>
-              ) : (
-                <div className="col-span-2 relative z-50">
-                  <label className="text-[9px] font-bold text-slate-500 uppercase block mb-1.5">
-                    Select Week
+                    Training Type
                   </label>
                   <CustomSelect
-                    name="weekNumber"
-                    value={form.weekNumber}
+                    name="type"
+                    value={form.type}
                     onChange={handleChange}
-                    placeholder="-- Choose a week --"
-                    options={Array.from({ length: 53 }, (_, i) => i + 1).map(
-                      (w) => ({
-                        value: String(w),
-                        label: getDateRangeFromWeek(w, 2026).label,
-                      }),
-                    )}
+                    placeholder="Select Type"
+                    options={[
+                      {
+                        value: "LinkedIn Learning",
+                        label: "LinkedIn Learning",
+                      },
+                      { value: "Internal", label: "Internal" },
+                      { value: "External", label: "External" },
+                    ]}
                   />
-                  <p className="text-[8px] text-slate-400 mt-1.5 uppercase font-bold tracking-widest pl-1">
-                    {form.dateRange || "Resulting date range will appear here"}
-                  </p>
                 </div>
-              )}
-            </div>
+                <div>
+                  <label className="text-[9px] font-bold text-slate-500 uppercase block mb-1.5">
+                    Status
+                  </label>
+                  <CustomSelect
+                    name="status"
+                    value={form.status}
+                    onChange={handleChange}
+                    placeholder="Select Status"
+                    options={[
+                      { value: "plan", label: "Plan" },
+                      { value: "actual", label: "Actual" },
+                      { value: "hold", label: "On Hold" },
+                      { value: "cancelled", label: "Cancelled" },
+                    ]}
+                  />
+                </div>
+              </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 relative z-40">
-              <div>
+              <div className="relative z-30">
                 <label className="text-[9px] font-bold text-slate-500 uppercase block mb-1.5">
-                  Training Type
+                  Participants (From Employee List)
                 </label>
-                <CustomSelect
-                  name="type"
-                  value={form.type}
+                <CascadingEmployeeSelect
+                  employeesData={employeesList}
+                  selectedParticipants={form.participants}
                   onChange={handleChange}
-                  placeholder="Select Type"
-                  options={[
-                    { value: "LinkedIn Learning", label: "LinkedIn Learning" },
-                    { value: "Internal", label: "Internal" },
-                    { value: "External", label: "External" },
-                  ]}
                 />
               </div>
-              <div>
-                <label className="text-[9px] font-bold text-slate-500 uppercase block mb-1.5">
-                  Status
-                </label>
-                <CustomSelect
-                  name="status"
-                  value={form.status}
-                  onChange={handleChange}
-                  placeholder="Select Status"
-                  options={[
-                    { value: "plan", label: "Plan" },
-                    { value: "actual", label: "Actual" },
-                    { value: "hold", label: "On Hold" },
-                    { value: "cancelled", label: "Cancelled" },
-                  ]}
-                />
-              </div>
-            </div>
 
-            <div className="relative z-30">
-              <label className="text-[9px] font-bold text-slate-500 uppercase block mb-1.5">
-                Participants (From Employee List)
-              </label>
-              <CascadingEmployeeSelect
-                employeesData={employeesList}
-                selectedParticipants={form.participants}
-                onChange={handleChange}
-              />
-            </div>
-
-            <button
-              type="submit"
-              className="mt-2 bg-[#2563eb] text-white font-black py-3 md:py-4 rounded-xl hover:bg-blue-700 transition active:scale-95 uppercase text-[10px] tracking-widest shadow-lg shadow-blue-200"
-            >
-              Add Training to Schedule
-            </button>
-          </form>
-        </div>
+              <button
+                type="submit"
+                className="mt-2 bg-[#2563eb] text-white font-black py-3 md:py-4 rounded-xl hover:bg-blue-700 transition active:scale-95 uppercase text-[10px] tracking-widest shadow-lg shadow-blue-200"
+              >
+                Add Training to Schedule
+              </button>
+            </form>
+          </div>
+        )}
 
         {/* DETAILS TABLE (KANAN) */}
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-md p-4 md:p-5 w-full lg:w-[68%] flex flex-col h-[350px] md:h-[450px]">
+        {/* 🔥 SESUAIKAN LEBAR TABEL BILA VIEWER */}
+        <div
+          className={`bg-white rounded-2xl border border-slate-200 shadow-md p-4 md:p-5 flex flex-col h-[350px] md:h-[450px] transition-all duration-300 ${userRole === "admin" ? "w-full lg:w-[68%]" : "w-full"}`}
+        >
           <div className="flex items-center gap-2 mb-4 border-b border-slate-100 pb-3 shrink-0">
             <h2 className="text-sm font-black text-slate-800 uppercase tracking-widest">
               Training Details
@@ -939,9 +943,6 @@ export default function TrainingCalendar() {
               <div className="w-1.5 h-1.5 rounded-full bg-green-500"></div>
               <div className="w-1.5 h-1.5 rounded-full bg-red-500"></div>
             </div>
-            <span className="ml-auto text-[9px] font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded-md">
-              👆 Click a row for full details
-            </span>
           </div>
           <div className="flex-1 overflow-auto rounded-xl border border-slate-100 custom-scrollbar">
             <table className="w-full min-w-[700px] text-[11px] text-left">
