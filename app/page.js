@@ -350,7 +350,6 @@ export default function Home() {
     if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
-  // 🔥 FUNGSI LOGIN DYNAMIC (Google Sheet)
   const handleLogin = async (e) => {
     e.preventDefault();
     setIsLoggingIn(true);
@@ -377,10 +376,10 @@ export default function Home() {
         setUsername("");
         setPassword("");
       } else {
-        setLoginError("Name or password is incorrect!");
+        setLoginError("Nama atau Password Admin salah!");
       }
     } catch (err) {
-      setLoginError("An error occurred while connecting!");
+      setLoginError("Terjadi kesalahan koneksi!");
     } finally {
       setIsLoggingIn(false);
     }
@@ -407,7 +406,6 @@ export default function Home() {
         activePage={activePage}
       />
 
-      {/* 🔥 PASSING STATE KE SIDEBAR */}
       <Sidebar
         mobileOpen={mobileOpen}
         setMobileOpen={setMobileOpen}
@@ -592,6 +590,16 @@ export default function Home() {
       </section>
 
       <section
+        id="training-calendar"
+        className="bg-[#f1f5f9] pt-[80px] md:pt-[90px] pb-4 px-3 md:px-5 overflow-hidden z-20 relative"
+        style={{ height: "100dvh" }}
+      >
+        <div className="h-full w-full">
+          <TrainingCalendar userRole={userRole} />
+        </div>
+      </section>
+
+      <section
         id="matrix-competency"
         className="bg-[#f1f5f9] pt-[80px] md:pt-[90px] pb-4 px-3 md:px-5 overflow-hidden z-20 relative flex items-center justify-center"
         style={{ height: "100dvh" }}
@@ -694,16 +702,6 @@ export default function Home() {
         </div>
       </section>
 
-      <section
-        id="training-calendar"
-        className="bg-[#f1f5f9] pt-[80px] md:pt-[90px] pb-4 px-3 md:px-5 overflow-hidden z-20 relative"
-        style={{ height: "100dvh" }}
-      >
-        <div className="h-full w-full">
-          <TrainingCalendar userRole={userRole} />
-        </div>
-      </section>
-
       {/* ========================================== */}
       {/* 🔥 MODAL LOGIN ADMIN DENGAN VERIFIKASI SHEET */}
       {/* ========================================== */}
@@ -745,7 +743,7 @@ export default function Home() {
                 Admin Access
               </h3>
               <p className="text-center text-xs font-bold text-slate-400 mb-6">
-                Enter full name & password
+                Enter name & password as in sheet
               </p>
 
               <form onSubmit={handleLogin} className="flex flex-col gap-4">
@@ -758,7 +756,7 @@ export default function Home() {
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                     className="w-full border border-slate-200 bg-slate-50 px-4 py-2.5 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 font-medium text-slate-700 transition"
-                    placeholder="e.g. Intan Kurnia Darsono"
+                    placeholder="e.g. Johnson Panggabean"
                     required
                   />
                 </div>
@@ -786,7 +784,7 @@ export default function Home() {
                   disabled={isLoggingIn}
                   className="mt-2 w-full bg-blue-600 hover:bg-blue-700 text-white font-black uppercase tracking-widest py-3 rounded-xl transition shadow-lg shadow-blue-500/30 active:scale-95 disabled:opacity-50"
                 >
-                  {isLoggingIn ? "Verifying..." : "login"}
+                  {isLoggingIn ? "Verifying..." : "Unlock Access"}
                 </button>
               </form>
             </div>

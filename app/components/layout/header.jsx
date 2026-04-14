@@ -65,12 +65,17 @@ export default function Header({
         >
           <button
             onClick={resetFilters}
-            className="flex items-center gap-2 text-white/70 hover:text-white transition-colors group"
+            className="flex items-center gap-2 text-white/70 hover:text-white transition-all group bg-white/5 hover:bg-white/10 px-3 py-1.5 md:py-2 rounded-full border border-white/10 active:scale-95"
+            title="Reset All Filters"
           >
             <RotateCcw
-              size={20}
+              size={16}
               className="group-hover:-rotate-180 transition-transform duration-500 ease-out"
             />
+            {/* 🔥 Teks RESET FILTER ditambahkan di sini */}
+            <span className="text-[9px] md:text-[10px] font-bold uppercase tracking-widest mt-[1px]">
+              Reset Filter
+            </span>
           </button>
         </div>
 

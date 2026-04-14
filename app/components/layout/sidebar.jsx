@@ -17,7 +17,6 @@ export default function Sidebar({
   setMobileOpen,
   activePage,
   setActivePage,
-  // 🔥 TERIMA PROPS BARU DARI PAGE.JS
   userRole = "viewer",
   setShowLoginModal,
   handleLogout,
@@ -47,18 +46,20 @@ export default function Sidebar({
         "bg-[#65a30d]/15 text-[#4d7c0f] font-bold border-l-4 border-[#65a30d]",
       hoverClass: "hover:bg-[#65a30d]/10 hover:text-[#4d7c0f]",
     },
-    {
-      id: "matrix-competency",
-      label: "Matrix Competency",
-      icon: <Grid size={20} />,
-      activeClass:
-        "bg-red-100 text-[#dc2626] font-bold border-l-4 border-[#dc2626]",
-      hoverClass: "hover:bg-red-50 hover:text-[#dc2626]",
-    },
+    // 🔥 POSISI & WARNA DITUKAR: Training Calendar sekarang warna Merah
     {
       id: "training-calendar",
       label: "Training Calendar",
       icon: <Calendar size={20} />,
+      activeClass:
+        "bg-red-100 text-[#dc2626] font-bold border-l-4 border-[#dc2626]",
+      hoverClass: "hover:bg-red-50 hover:text-[#dc2626]",
+    },
+    // 🔥 POSISI & WARNA DITUKAR: Matrix Competency sekarang warna Biru
+    {
+      id: "matrix-competency",
+      label: "Matrix Competency",
+      icon: <Grid size={20} />,
       activeClass:
         "bg-[#000ebf]/10 text-[#000ebf] font-bold border-l-4 border-[#000ebf]",
       hoverClass: "hover:bg-blue-50 hover:text-[#000ebf]",
@@ -136,14 +137,14 @@ export default function Sidebar({
         </div>
 
         {/* ========================================== */}
-        {/* 🔥 ADMIN LOGIN BUTTON (DI BAGIAN BAWAH SIDEBAR) */}
+        {/* ADMIN LOGIN BUTTON (DI BAGIAN BAWAH SIDEBAR) */}
         {/* ========================================== */}
         <div className="p-4 border-t border-slate-100 shrink-0 bg-slate-50 mt-auto">
           {userRole === "viewer" ? (
             <button
               onClick={() => {
-                setMobileOpen(false); // Tutup sidebar
-                setShowLoginModal(true); // Buka modal login
+                setMobileOpen(false);
+                setShowLoginModal(true);
               }}
               className="flex items-center justify-center gap-3 w-full p-3 rounded-xl transition-all duration-300 bg-white border border-slate-200 text-slate-500 hover:text-blue-600 hover:border-blue-200 hover:bg-blue-50 shadow-sm active:scale-[0.98] group"
             >
