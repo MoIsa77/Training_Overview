@@ -743,7 +743,7 @@ export default function Home() {
                 Admin Access
               </h3>
               <p className="text-center text-xs font-bold text-slate-400 mb-6">
-                Enter name & password as in sheet
+                Enter full name & password
               </p>
 
               <form onSubmit={handleLogin} className="flex flex-col gap-4">
@@ -756,7 +756,7 @@ export default function Home() {
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                     className="w-full border border-slate-200 bg-slate-50 px-4 py-2.5 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 font-medium text-slate-700 transition"
-                    placeholder="e.g. Johnson Panggabean"
+                    placeholder="e.g. Intan Kurnia Darsono"
                     required
                   />
                 </div>
@@ -784,7 +784,7 @@ export default function Home() {
                   disabled={isLoggingIn}
                   className="mt-2 w-full bg-blue-600 hover:bg-blue-700 text-white font-black uppercase tracking-widest py-3 rounded-xl transition shadow-lg shadow-blue-500/30 active:scale-95 disabled:opacity-50"
                 >
-                  {isLoggingIn ? "Verifying..." : "Unlock Access"}
+                  {isLoggingIn ? "Verifying..." : "login"}
                 </button>
               </form>
             </div>
