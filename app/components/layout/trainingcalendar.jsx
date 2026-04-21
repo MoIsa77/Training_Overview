@@ -19,6 +19,9 @@ const months = [
 ];
 const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
+// ==========================================
+// HELPER FUNCTIONS
+// ==========================================
 function getDateRangeFromWeek(week, year = 2026) {
   const firstDayOfYear = new Date(year, 0, 1);
   const daysOffset =
@@ -117,6 +120,9 @@ function parseDateRange(dateStr, year = 2026) {
   return { startDate: "", endDate: "" };
 }
 
+// ==========================================
+// CUSTOM SELECT COMPONENT
+// ==========================================
 const CustomSelect = ({ name, value, options, onChange, placeholder }) => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
@@ -149,7 +155,6 @@ const CustomSelect = ({ name, value, options, onChange, placeholder }) => {
           ▼
         </span>
       </div>
-
       {isOpen && (
         <div className="absolute top-full left-0 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl z-[9999] overflow-hidden animate-in fade-in zoom-in-95 duration-100">
           <div className="max-h-48 overflow-y-auto py-1 custom-scrollbar">
@@ -179,6 +184,9 @@ const CustomSelect = ({ name, value, options, onChange, placeholder }) => {
   );
 };
 
+// ==========================================
+// CASCADING EMPLOYEE SELECT WITH SEARCH
+// ==========================================
 const CascadingEmployeeSelect = ({
   employeesData,
   selectedParticipants,
@@ -221,11 +229,9 @@ const CascadingEmployeeSelect = ({
       ? selectedParticipants.split(", ").filter(Boolean)
       : [];
     let newArray;
-    if (currentArray.includes(empName)) {
+    if (currentArray.includes(empName))
       newArray = currentArray.filter((name) => name !== empName);
-    } else {
-      newArray = [...currentArray, empName];
-    }
+    else newArray = [...currentArray, empName];
     onChange({ target: { name: "participants", value: newArray.join(", ") } });
   };
 
@@ -252,7 +258,6 @@ const CascadingEmployeeSelect = ({
         >
           {displayText}
         </span>
-
         <div className="flex items-center gap-2">
           {selectedParticipants && (
             <button
@@ -326,7 +331,6 @@ const CascadingEmployeeSelect = ({
                 </svg>
               </div>
             </div>
-
             <div className="flex-1 overflow-y-auto py-1 custom-scrollbar">
               {!selectedDept ? (
                 <div className="h-full flex items-center justify-center text-[10px] md:text-[11px] text-slate-400 font-medium p-4 text-center">
@@ -342,7 +346,6 @@ const CascadingEmployeeSelect = ({
                     ? selectedParticipants.split(", ").filter(Boolean)
                     : [];
                   const isChecked = currentArray.includes(emp.name);
-
                   return (
                     <div
                       key={emp.id || emp.name}
@@ -385,7 +388,6 @@ const CascadingEmployeeSelect = ({
                 })
               )}
             </div>
-
             <div className="p-2 border-t border-slate-100 bg-slate-50 shrink-0">
               <button
                 type="button"
@@ -405,7 +407,6 @@ const CascadingEmployeeSelect = ({
 // ==========================================
 // MAIN COMPONENT
 // ==========================================
-// 🔥 PENAMBAHAN PROP userRole
 export default function TrainingCalendar({ userRole = "viewer" }) {
   const [trainings, setTrainings] = useState([]);
   const [employeesList, setEmployeesList] = useState([]);
@@ -416,6 +417,14 @@ export default function TrainingCalendar({ userRole = "viewer" }) {
 
   const [selectedTraining, setSelectedTraining] = useState(null);
   const [isMounted, setIsMounted] = useState(false);
+
+  // 🔥 STATE SORTING
+  const [sortConfig, setSortConfig] = useState({
+    key: "startDate",
+    direction: "ascending",
+  });
+  const [isSortMenuOpen, setIsSortMenuOpen] = useState(false);
+  const sortMenuRef = useRef(null);
 
   const [form, setForm] = useState({
     title: "",
@@ -442,7 +451,6 @@ export default function TrainingCalendar({ userRole = "viewer" }) {
         const formattedData = dataCalendar.map((item) => {
           const dateStr = item["Date"] || "";
           const parsedDates = parseDateRange(dateStr, 2026);
-
           return {
             title: item["Training Title"] || "Untitled",
             dateRange: dateStr,
@@ -494,9 +502,36 @@ export default function TrainingCalendar({ userRole = "viewer" }) {
         setIsLoading(false);
       }
     };
-
     fetchAllData();
   }, []);
+
+  // 🔥 CLICK OUTSIDE UNTUK MENU SORTING
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (sortMenuRef.current && !sortMenuRef.current.contains(event.target)) {
+        setIsSortMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // 🔥 LOGIKA SORTING
+  const sortedTrainings = useMemo(() => {
+    let sortableItems = [...trainings];
+    sortableItems.sort((a, b) => {
+      let aValue = a[sortConfig.key] || "";
+      let bValue = b[sortConfig.key] || "";
+
+      if (typeof aValue === "string") aValue = aValue.toLowerCase();
+      if (typeof bValue === "string") bValue = bValue.toLowerCase();
+
+      if (aValue < bValue) return sortConfig.direction === "ascending" ? -1 : 1;
+      if (aValue > bValue) return sortConfig.direction === "ascending" ? 1 : -1;
+      return 0;
+    });
+    return sortableItems;
+  }, [trainings, sortConfig]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -509,17 +544,12 @@ export default function TrainingCalendar({ userRole = "viewer" }) {
         endDate: range.end,
         dateRange: range.label,
       });
-    } else {
-      setForm({ ...form, [name]: value });
-    }
+    } else setForm({ ...form, [name]: value });
   };
 
   function handleDateClick(date) {
-    // 🔥 CEGAH KLIK JIKA VIEWER
     if (userRole !== "admin") return;
-
     if (inputMode === "week") setInputMode("date");
-
     if (!rangeStart || (rangeStart && rangeEnd)) {
       setRangeStart(date);
       setRangeEnd(null);
@@ -559,7 +589,6 @@ export default function TrainingCalendar({ userRole = "viewer" }) {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (userRole !== "admin") return;
-
     setTrainings([...trainings, form]);
     setForm({
       title: "",
@@ -602,7 +631,6 @@ export default function TrainingCalendar({ userRole = "viewer" }) {
         } else {
           const dateKey = `${year}-${String(monthIndex + 1).padStart(2, "0")}-${String(dayCounter).padStart(2, "0")}`;
           const isSunday = j === 0;
-
           const dayTrainings = trainings.filter((t) =>
             isDateInRange(dateKey, t.startDate, t.endDate),
           );
@@ -693,7 +721,6 @@ export default function TrainingCalendar({ userRole = "viewer" }) {
           dayCounter++;
         }
       }
-
       rows.push(
         <div
           key={`row-${i}`}
@@ -708,9 +735,15 @@ export default function TrainingCalendar({ userRole = "viewer" }) {
     return rows;
   };
 
+  const sortOptions = [
+    { label: "Name", value: "title" },
+    { label: "Date", value: "startDate" }, // 🔥 Diganti menjadi Date saja
+    { label: "Type", value: "type" },
+    { label: "Status", value: "status" },
+  ];
+
   return (
     <div className="h-full w-full flex flex-col gap-3 md:gap-4 p-2 md:p-5 overflow-y-auto bg-[#f1f5f9] custom-scrollbar font-sans pb-10 relative">
-      {/* HEADER SECTION */}
       <div className="flex flex-col md:flex-row justify-between items-end md:items-center gap-3 shrink-0">
         <h1 className="text-3xl md:text-4xl font-black text-[#d32f2f] tracking-tighter">
           2026
@@ -730,7 +763,6 @@ export default function TrainingCalendar({ userRole = "viewer" }) {
         </div>
       </div>
 
-      {/* GRID KALENDER */}
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 md:gap-3 shrink-0 w-full auto-rows-fr">
         {months.map((month, i) => (
           <div
@@ -756,9 +788,7 @@ export default function TrainingCalendar({ userRole = "viewer" }) {
         ))}
       </div>
 
-      {/* SECTION FORM & DETAILS */}
       <div className="flex flex-col lg:flex-row gap-3 md:gap-4 mt-2 w-full shrink-0">
-        {/* 🔥 TAMPILKAN INPUT FORM HANYA UNTUK ADMIN */}
         {userRole === "admin" && (
           <div className="bg-white p-4 md:p-5 rounded-2xl border border-slate-200 shadow-md w-full lg:w-[32%] flex flex-col h-fit">
             <div className="flex flex-wrap sm:flex-nowrap items-center justify-between mb-4 border-b border-slate-100 pb-3 gap-3">
@@ -772,7 +802,6 @@ export default function TrainingCalendar({ userRole = "viewer" }) {
                   <div className="w-1.5 h-1.5 rounded-full bg-red-500"></div>
                 </div>
               </div>
-
               <div className="flex gap-1.5 md:gap-2 shrink-0">
                 <button
                   type="button"
@@ -810,7 +839,6 @@ export default function TrainingCalendar({ userRole = "viewer" }) {
                 </button>
               </div>
             </div>
-
             <form
               onSubmit={handleSubmit}
               className="flex flex-col gap-3 md:gap-4 text-[11px]"
@@ -828,7 +856,6 @@ export default function TrainingCalendar({ userRole = "viewer" }) {
                   required
                 />
               </div>
-
               <div className="grid grid-cols-2 gap-3">
                 {inputMode === "date" ? (
                   <div className="col-span-2">
@@ -868,7 +895,6 @@ export default function TrainingCalendar({ userRole = "viewer" }) {
                   </div>
                 )}
               </div>
-
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 relative z-40">
                 <div>
                   <label className="text-[9px] font-bold text-slate-500 uppercase block mb-1.5">
@@ -907,7 +933,6 @@ export default function TrainingCalendar({ userRole = "viewer" }) {
                   />
                 </div>
               </div>
-
               <div className="relative z-30">
                 <label className="text-[9px] font-bold text-slate-500 uppercase block mb-1.5">
                   Participants (From Employee List)
@@ -918,7 +943,6 @@ export default function TrainingCalendar({ userRole = "viewer" }) {
                   onChange={handleChange}
                 />
               </div>
-
               <button
                 type="submit"
                 className="mt-2 bg-[#2563eb] text-white font-black py-3 md:py-4 rounded-xl hover:bg-blue-700 transition active:scale-95 uppercase text-[10px] tracking-widest shadow-lg shadow-blue-200"
@@ -929,21 +953,124 @@ export default function TrainingCalendar({ userRole = "viewer" }) {
           </div>
         )}
 
-        {/* DETAILS TABLE (KANAN) */}
-        {/* 🔥 SESUAIKAN LEBAR TABEL BILA VIEWER */}
         <div
           className={`bg-white rounded-2xl border border-slate-200 shadow-md p-4 md:p-5 flex flex-col h-[350px] md:h-[450px] transition-all duration-300 ${userRole === "admin" ? "w-full lg:w-[68%]" : "w-full"}`}
         >
-          <div className="flex items-center gap-2 mb-4 border-b border-slate-100 pb-3 shrink-0">
-            <h2 className="text-sm font-black text-slate-800 uppercase tracking-widest">
-              Training Details
-            </h2>
-            <div className="flex gap-1.5 ml-2">
-              <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
-              <div className="w-1.5 h-1.5 rounded-full bg-green-500"></div>
-              <div className="w-1.5 h-1.5 rounded-full bg-red-500"></div>
+          <div className="flex items-center justify-between mb-4 border-b border-slate-100 pb-3 shrink-0">
+            <div className="flex items-center gap-2">
+              <h2 className="text-sm font-black text-slate-800 uppercase tracking-widest">
+                Training Details
+              </h2>
+              <div className="flex gap-1.5 ml-2 hidden sm:flex">
+                <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
+                <div className="w-1.5 h-1.5 rounded-full bg-green-500"></div>
+                <div className="w-1.5 h-1.5 rounded-full bg-red-500"></div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+              {/* 🔥 TEMA TERANG: DROPDOWN SORT WINDOWS STYLE PUTIH */}
+              <div className="relative" ref={sortMenuRef}>
+                <button
+                  onClick={() => setIsSortMenuOpen(!isSortMenuOpen)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md transition text-[10px] font-bold uppercase tracking-wider border ${isSortMenuOpen ? "bg-blue-50 text-blue-700 border-blue-200" : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"}`}
+                >
+                  <svg
+                    className="w-3.5 h-3.5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12"
+                    ></path>
+                  </svg>
+                  Sort
+                </button>
+
+                {isSortMenuOpen && (
+                  <div className="absolute right-0 mt-2 w-44 bg-white text-slate-700 border border-slate-200 shadow-[0_8px_30px_rgb(0,0,0,0.12)] rounded-lg py-1.5 z-50 text-[12px] font-medium font-sans">
+                    {sortOptions.map((opt) => (
+                      <div
+                        key={opt.value}
+                        onClick={() => {
+                          setSortConfig({ ...sortConfig, key: opt.value });
+                          setIsSortMenuOpen(false);
+                        }}
+                        className="flex items-center px-2 py-1.5 hover:bg-slate-50 cursor-pointer transition-colors"
+                      >
+                        <span className="w-6 flex justify-center text-[18px] leading-none mb-1 text-blue-600">
+                          {sortConfig.key === opt.value ? "•" : ""}
+                        </span>
+                        <span
+                          className={
+                            sortConfig.key === opt.value
+                              ? "font-bold text-blue-700"
+                              : ""
+                          }
+                        >
+                          {opt.label}
+                        </span>
+                      </div>
+                    ))}
+
+                    <div className="h-[1px] bg-slate-100 my-1.5 mx-2"></div>
+
+                    <div
+                      onClick={() => {
+                        setSortConfig({
+                          ...sortConfig,
+                          direction: "ascending",
+                        });
+                        setIsSortMenuOpen(false);
+                      }}
+                      className="flex items-center px-2 py-1.5 hover:bg-slate-50 cursor-pointer transition-colors"
+                    >
+                      <span className="w-6 flex justify-center text-[18px] leading-none mb-1 text-blue-600">
+                        {sortConfig.direction === "ascending" ? "•" : ""}
+                      </span>
+                      <span
+                        className={
+                          sortConfig.direction === "ascending"
+                            ? "font-bold text-blue-700"
+                            : ""
+                        }
+                      >
+                        Ascending
+                      </span>
+                    </div>
+                    <div
+                      onClick={() => {
+                        setSortConfig({
+                          ...sortConfig,
+                          direction: "descending",
+                        });
+                        setIsSortMenuOpen(false);
+                      }}
+                      className="flex items-center px-2 py-1.5 hover:bg-slate-50 cursor-pointer transition-colors"
+                    >
+                      <span className="w-6 flex justify-center text-[18px] leading-none mb-1 text-blue-600">
+                        {sortConfig.direction === "descending" ? "•" : ""}
+                      </span>
+                      <span
+                        className={
+                          sortConfig.direction === "descending"
+                            ? "font-bold text-blue-700"
+                            : ""
+                        }
+                      >
+                        Descending
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
+
           <div className="flex-1 overflow-auto rounded-xl border border-slate-100 custom-scrollbar">
             <table className="w-full min-w-[700px] text-[11px] text-left">
               <thead className="bg-[#d32f2f] text-white sticky top-0 z-10 shadow-sm">
@@ -975,7 +1102,7 @@ export default function TrainingCalendar({ userRole = "viewer" }) {
                       Loading data from Google Sheets...
                     </td>
                   </tr>
-                ) : trainings.length === 0 ? (
+                ) : sortedTrainings.length === 0 ? (
                   <tr>
                     <td
                       colSpan="5"
@@ -985,7 +1112,7 @@ export default function TrainingCalendar({ userRole = "viewer" }) {
                     </td>
                   </tr>
                 ) : (
-                  trainings.map((t, index) => (
+                  sortedTrainings.map((t, index) => (
                     <tr
                       key={index}
                       onClick={() => setSelectedTraining(t)}
@@ -1022,22 +1149,15 @@ export default function TrainingCalendar({ userRole = "viewer" }) {
         </div>
       </div>
 
-      {/* ========================================== */}
-      {/* MODAL POP-UP DETAIL TRAINING */}
-      {/* ========================================== */}
       {isMounted &&
         selectedTraining &&
         createPortal(
           <div className="fixed inset-0 z-[1000000] flex items-center justify-center p-4 pointer-events-auto">
-            {/* Latar Hitam Blur */}
             <div
               className="absolute inset-0 bg-slate-900/60 backdrop-blur-[2px]"
               onClick={() => setSelectedTraining(null)}
             ></div>
-
-            {/* Kotak Modal */}
             <div className="relative bg-white w-full max-w-md rounded-2xl shadow-2xl flex flex-col animate-in fade-in zoom-in-95 duration-200 overflow-hidden">
-              {/* Header Modal */}
               <div className="bg-slate-50 border-b border-slate-100 p-5 flex justify-between items-start gap-4">
                 <div>
                   <span
@@ -1056,8 +1176,6 @@ export default function TrainingCalendar({ userRole = "viewer" }) {
                   ✕
                 </button>
               </div>
-
-              {/* Konten Modal */}
               <div className="p-5 flex flex-col gap-5">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="bg-slate-50 rounded-xl p-3 border border-slate-100">
@@ -1077,7 +1195,6 @@ export default function TrainingCalendar({ userRole = "viewer" }) {
                     </p>
                   </div>
                 </div>
-
                 <div className="flex flex-col h-full min-h-[100px]">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-slate-500 font-bold uppercase tracking-wider text-[10px]">
@@ -1091,8 +1208,6 @@ export default function TrainingCalendar({ userRole = "viewer" }) {
                       People
                     </span>
                   </div>
-
-                  {/* 🔥 Daftar Partisipan dengan Nama Departemen */}
                   <div className="bg-white border border-slate-200 rounded-xl p-3 max-h-[180px] overflow-y-auto custom-scrollbar shadow-inner">
                     {selectedTraining.participants ? (
                       <ul className="list-none space-y-1">
@@ -1101,13 +1216,11 @@ export default function TrainingCalendar({ userRole = "viewer" }) {
                           .filter(Boolean)
                           .map((p, i) => {
                             const empName = p.trim();
-                            // Mencari kecocokan nama dengan data dari Employee List
                             const foundEmp = employeesList.find(
                               (e) =>
                                 e.name.toLowerCase() === empName.toLowerCase(),
                             );
                             const dept = foundEmp ? foundEmp.department : null;
-
                             return (
                               <li
                                 key={i}
@@ -1143,8 +1256,6 @@ export default function TrainingCalendar({ userRole = "viewer" }) {
                   </div>
                 </div>
               </div>
-
-              {/* Footer Modal */}
               <div className="p-4 bg-slate-50 border-t border-slate-100">
                 <button
                   onClick={() => setSelectedTraining(null)}
@@ -1157,7 +1268,6 @@ export default function TrainingCalendar({ userRole = "viewer" }) {
           </div>,
           document.body,
         )}
-
       <style jsx>{`
         .custom-scrollbar::-webkit-scrollbar {
           width: 6px;
