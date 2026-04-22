@@ -8,6 +8,7 @@ import TrainingAnalytics from "./components/layout/traininganalytics";
 import MandaysSummary from "./components/layout/mandayssummary";
 import TrainingPlan from "./components/layout/trainingplan";
 import TrainingCalendar from "./components/layout/trainingcalendar";
+import MatrixCompetency from "./components/layout/matrixcompetency";
 
 const DEPT_OPTIONS = [
   "Supply Chain",
@@ -601,104 +602,11 @@ export default function Home() {
 
       <section
         id="matrix-competency"
-        className="bg-[#f1f5f9] pt-[80px] md:pt-[90px] pb-4 px-3 md:px-5 overflow-hidden z-20 relative flex items-center justify-center"
+        className="bg-[#f1f5f9] pt-[80px] md:pt-[90px] pb-4 px-3 md:px-5 overflow-hidden z-20 relative"
         style={{ height: "100dvh" }}
       >
-        <div className="text-center bg-white p-10 md:p-16 rounded-3xl shadow-xl border border-slate-200 max-w-lg w-full relative overflow-hidden group">
-          <div className="relative w-56 h-48 mx-auto flex items-end justify-center mb-8">
-            <svg
-              className="absolute top-0 left-6 w-32 h-32 text-slate-200"
-              fill="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <rect x="2" y="2" width="20" height="20" rx="2" fill="#f1f5f9" />
-              <rect x="4" y="4" width="4" height="4" fill="#cbd5e1" />
-              <rect x="10" y="4" width="4" height="4" fill="#3b82f6" />
-              <rect x="16" y="4" width="4" height="4" fill="#cbd5e1" />
-              <rect x="4" y="10" width="4" height="4" fill="#ef4444" />
-              <rect x="10" y="10" width="4" height="4" fill="#cbd5e1" />
-              <rect x="16" y="10" width="4" height="4" fill="#10b981" />
-              <rect x="4" y="16" width="4" height="4" fill="#cbd5e1" />
-              <rect x="10" y="16" width="4" height="4" fill="#f59e0b" />
-              <rect x="16" y="16" width="4" height="4" fill="#cbd5e1" />
-            </svg>
-            <svg
-              className="absolute top-2 right-4 w-12 h-12 text-slate-300 animate-[spin_4s_linear_infinite]"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-              ></path>
-              <circle
-                cx="12"
-                cy="12"
-                r="3"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-              ></circle>
-            </svg>
-            <div
-              className="relative z-10 animate-bounce"
-              style={{ animationDuration: "2s" }}
-            >
-              <svg
-                className="w-28 h-28 drop-shadow-xl"
-                viewBox="0 0 64 64"
-                fill="none"
-              >
-                <path
-                  d="M16 60v-8c0-6.6 5.4-12 12-12h8c6.6 0 12 5.4 12 12v8"
-                  fill="#fb923c"
-                />
-                <path d="M22 40l-6 20h32l-6-20" fill="#ea580c" />
-                <path d="M24 40v20M40 40v20" stroke="#fcd34d" strokeWidth="3" />
-                <circle cx="32" cy="24" r="10" fill="#fca5a5" />
-                <path
-                  d="M32 6c-6.6 0-12 5.4-12 12v2h24v-2c0-6.6-5.4-12-12-12z"
-                  fill="#eab308"
-                />
-                <path d="M18 20h28v4H18z" fill="#ca8a04" />
-              </svg>
-            </div>
-            <div
-              className="absolute bottom-2 left-8 z-20 animate-pulse"
-              style={{ animationDuration: "1.5s" }}
-            >
-              <svg
-                className="w-14 h-14 text-blue-600 drop-shadow-md"
-                viewBox="0 0 24 24"
-                fill="currentColor"
-              >
-                <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z" />
-              </svg>
-            </div>
-          </div>
-          <h1 className="text-2xl md:text-4xl font-black text-slate-800">
-            MATRIX COMPETENCY
-          </h1>
-          <p className="text-slate-400 mt-3 font-bold uppercase tracking-widest text-xs md:text-sm">
-            Under Construction
-          </p>
-          <div className="mt-6 flex justify-center gap-2">
-            <div
-              className="w-2 h-2 rounded-full bg-blue-500 animate-bounce"
-              style={{ animationDelay: "0s" }}
-            ></div>
-            <div
-              className="w-2 h-2 rounded-full bg-yellow-500 animate-bounce"
-              style={{ animationDelay: "0.2s" }}
-            ></div>
-            <div
-              className="w-2 h-2 rounded-full bg-red-500 animate-bounce"
-              style={{ animationDelay: "0.4s" }}
-            ></div>
-          </div>
+        <div className="h-full w-full">
+          <MatrixCompetency userRole={userRole} />
         </div>
       </section>
 
@@ -743,7 +651,7 @@ export default function Home() {
                 Admin Access
               </h3>
               <p className="text-center text-xs font-bold text-slate-400 mb-6">
-                Enter full name & password
+                Enter name & password as in sheet
               </p>
 
               <form onSubmit={handleLogin} className="flex flex-col gap-4">
@@ -756,7 +664,7 @@ export default function Home() {
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                     className="w-full border border-slate-200 bg-slate-50 px-4 py-2.5 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 font-medium text-slate-700 transition"
-                    placeholder="e.g. Intan Kurnia Darsono"
+                    placeholder="e.g. Johnson Panggabean"
                     required
                   />
                 </div>
@@ -784,7 +692,7 @@ export default function Home() {
                   disabled={isLoggingIn}
                   className="mt-2 w-full bg-blue-600 hover:bg-blue-700 text-white font-black uppercase tracking-widest py-3 rounded-xl transition shadow-lg shadow-blue-500/30 active:scale-95 disabled:opacity-50"
                 >
-                  {isLoggingIn ? "Verifying..." : "login"}
+                  {isLoggingIn ? "Verifying..." : "Unlock Access"}
                 </button>
               </form>
             </div>
