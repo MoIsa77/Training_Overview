@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
 export default function MatrixCompetency({ userRole }) {
   // Hanya Admin yang bisa mengedit
@@ -9,7 +9,12 @@ export default function MatrixCompetency({ userRole }) {
   const [isSaving, setIsSaving] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
 
-  // Data Simulasi berdasarkan PPTX
+  // STATE UNTUK DATA DYNAMIC DARI GOOGLE SHEET
+  const [employeeOptions, setEmployeeOptions] = useState([]);
+  const [departmentOptions, setDepartmentOptions] = useState([]);
+  const [isLoadingData, setIsLoadingData] = useState(true);
+
+  // Data Simulasi Tabel
   const [coreCompetencies, setCoreCompetencies] = useState([
     {
       id: 1,
@@ -124,6 +129,57 @@ export default function MatrixCompetency({ userRole }) {
     },
   ]);
 
+  // MENGAMBIL DATA KARYAWAN & DEPARTEMEN DARI GOOGLE SHEET
+  useEffect(() => {
+    const fetchEmployeeData = async () => {
+      try {
+        setIsLoadingData(true);
+        const response = await fetch(
+          "https://opensheet.elk.sh/1EkgLNCryuKRTt-0Lp5yfAUgjoc7vHNj-ZOdIScF2a1Y/Employee%20List",
+          { cache: "no-store" },
+        );
+        const data = await response.json();
+
+        const formattedEmployees = data
+          .map((emp) => {
+            const getVal = (possibleKeys) => {
+              const keys = Object.keys(emp);
+              for (let pk of possibleKeys) {
+                const match = keys.find(
+                  (k) =>
+                    k.toLowerCase().replace(/\s+/g, "") ===
+                    pk.toLowerCase().replace(/\s+/g, ""),
+                );
+                if (match) return emp[match];
+              }
+              return "";
+            };
+            return {
+              name: getVal(["Name", "EmployeeName", "Nama", "Participants"]),
+              department: getVal(["Department", "Dept", "Departement"]),
+            };
+          })
+          .filter((emp) => emp.name && emp.department);
+
+        const uniqueNames = [
+          ...new Set(formattedEmployees.map((e) => e.name)),
+        ].sort();
+        const uniqueDepts = [
+          ...new Set(formattedEmployees.map((e) => e.department)),
+        ].sort();
+
+        setEmployeeOptions(uniqueNames);
+        setDepartmentOptions(uniqueDepts);
+        setIsLoadingData(false);
+      } catch (error) {
+        console.error("Gagal menarik data Karyawan dari Google Sheets:", error);
+        setIsLoadingData(false);
+      }
+    };
+
+    fetchEmployeeData();
+  }, []);
+
   const handleSave = () => {
     setIsSaving(true);
     setTimeout(() => {
@@ -133,47 +189,87 @@ export default function MatrixCompetency({ userRole }) {
     }, 1500);
   };
 
-  // Fungsi untuk menghitung Gap
   const getGap = (target, actual) => {
     const gap = target - actual;
     return gap > 0 ? gap : 0;
   };
 
-  // Komponen Input Header Dinamis
-  const HeaderInput = ({ label, value, type = "text", isSelect = false }) => (
-    <div className="flex items-center gap-3 mb-2.5">
-      <span className="w-1/3 text-[10px] md:text-[11px] font-bold text-[#5c6bc0]">
+  const addFuncCompetency = () => {
+    setFuncCompetencies([
+      ...funcCompetencies,
+      {
+        id: Date.now(),
+        name: "",
+        target: 0,
+        actual: 0,
+        type: "",
+        details: "",
+        timeline: "",
+        curLevel: "",
+        evalDate: "",
+        remark: "",
+      },
+    ]);
+  };
+
+  const removeFuncCompetency = (id) => {
+    setFuncCompetencies(funcCompetencies.filter((item) => item.id !== id));
+  };
+
+  // Gaya Input Tabel Dinamis
+  const tableInputClass = `w-full text-[10px] md:text-[11px] p-1.5 outline-none transition-all disabled:bg-transparent disabled:border-transparent disabled:text-slate-800 disabled:font-medium ${isReadOnly ? "text-center" : "border border-slate-300 rounded bg-white focus:ring-1 focus:ring-blue-500 focus:border-blue-500"}`;
+
+  // Komponen Input Header
+  const HeaderInput = ({
+    label,
+    value,
+    type = "text",
+    isSelect = false,
+    options = [],
+    isLoading = false,
+  }) => (
+    <div className="flex items-center gap-3 mb-3">
+      <span className="w-1/3 text-[10px] md:text-[11px] font-bold text-slate-500 uppercase tracking-wide leading-tight">
         {label}
       </span>
       {isSelect ? (
         <select
-          disabled={isReadOnly}
-          className="w-2/3 border border-[#cbd5e1] rounded p-1.5 md:p-2 text-[10px] md:text-[11px] text-slate-700 outline-none focus:border-[#5c6bc0] disabled:bg-slate-50 transition-colors"
+          disabled={isReadOnly || isLoading}
+          defaultValue={value}
+          className="w-2/3 border border-slate-200 rounded-lg p-2 text-[11px] font-bold text-slate-700 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 disabled:bg-slate-50 shadow-sm transition-all"
         >
-          <option>{value}</option>
-          <option>Johnson Panggabean</option>
-          <option>Intan Kurnia Darsono</option>
-          <option>Angga Praditya</option>
+          {isLoading ? (
+            <option>Loading data...</option>
+          ) : (
+            <>
+              <option value={value}>{value}</option>
+              {options.map((opt, i) => (
+                <option key={i} value={opt}>
+                  {opt}
+                </option>
+              ))}
+            </>
+          )}
         </select>
       ) : (
         <input
           type={type}
           defaultValue={value}
           disabled={isReadOnly}
-          className="w-2/3 border border-[#cbd5e1] rounded p-1.5 md:p-2 text-[10px] md:text-[11px] text-slate-700 outline-none focus:border-[#5c6bc0] disabled:bg-slate-50 transition-colors"
+          className="w-2/3 border border-slate-200 rounded-lg p-2 text-[11px] font-bold text-slate-700 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 disabled:bg-slate-50 shadow-sm transition-all"
         />
       )}
     </div>
   );
 
   return (
-    <div className="w-full bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden flex flex-col h-full relative">
-      {/* NOTIFIKASI SUKSES MENGAMBANG */}
+    <div className="w-full h-full flex flex-col relative z-20">
+      {/* NOTIFIKASI SUKSES */}
       <div
-        className={`absolute top-4 left-1/2 -translate-x-1/2 z-50 bg-[#22c55e] text-white px-6 py-2.5 rounded-full shadow-lg font-bold text-xs flex items-center gap-2 transition-all duration-300 ${showSuccess ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-10 pointer-events-none"}`}
+        className={`fixed top-24 left-1/2 -translate-x-1/2 z-[100000] bg-[#22c55e] text-white px-6 py-3 rounded-full shadow-2xl font-black text-xs uppercase tracking-widest flex items-center gap-3 transition-all duration-500 ${showSuccess ? "opacity-100 translate-y-0 scale-100" : "opacity-0 -translate-y-10 scale-95 pointer-events-none"}`}
       >
         <svg
-          className="w-4 h-4"
+          className="w-5 h-5"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -185,149 +281,172 @@ export default function MatrixCompetency({ userRole }) {
             d="M5 13l4 4L19 7"
           ></path>
         </svg>
-        Data successfully saved to Database!
+        Data Successfully Saved!
       </div>
 
-      {/* HEADER Admin / Viewer Mode */}
-      <div className="bg-[#1e3a8a] text-white p-4 flex justify-between items-center shrink-0">
-        <h2 className="text-sm md:text-base font-black tracking-widest uppercase">
-          Competency Matrix Entry
-        </h2>
-        {isReadOnly ? (
-          <span className="bg-red-500/20 text-red-100 border border-red-500/30 px-3 py-1 rounded-full text-[9px] font-bold uppercase tracking-wider flex items-center gap-1.5">
-            <svg
-              className="w-3 h-3"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-              ></path>
-            </svg>{" "}
-            Read-Only
-          </span>
-        ) : (
-          <span className="bg-green-500/20 text-green-100 border border-green-500/30 px-3 py-1 rounded-full text-[9px] font-bold uppercase tracking-wider flex items-center gap-1.5">
-            <svg
-              className="w-3 h-3"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"
-              ></path>
-            </svg>{" "}
-            Editing Mode
-          </span>
-        )}
+      {/* HEADER INFORMATION SECTION */}
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-md p-5 md:p-6 mb-6 shrink-0 flex flex-col relative overflow-hidden">
+        <div className="flex items-center justify-between border-b border-slate-100 pb-4 mb-5">
+          <div className="flex items-center gap-3">
+            <h2 className="text-sm md:text-base font-black text-slate-800 uppercase tracking-widest">
+              Employee Profile
+            </h2>
+            <div className="flex gap-1.5 hidden sm:flex">
+              <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+              <div className="w-2 h-2 rounded-full bg-green-500"></div>
+              <div className="w-2 h-2 rounded-full bg-red-500"></div>
+            </div>
+          </div>
+          {isReadOnly ? (
+            <span className="bg-slate-100 text-slate-500 px-3 py-1 rounded-full text-[9px] font-bold uppercase tracking-wider flex items-center gap-1.5">
+              <svg
+                className="w-3 h-3"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                ></path>
+              </svg>{" "}
+              Read-Only Mode
+            </span>
+          ) : (
+            <span className="bg-blue-50 text-blue-600 border border-blue-200 px-3 py-1 rounded-full text-[9px] font-bold uppercase tracking-wider flex items-center gap-1.5">
+              <svg
+                className="w-3 h-3"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"
+                ></path>
+              </svg>{" "}
+              Editing Mode
+            </span>
+          )}
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-2 relative z-10">
+          <div>
+            <HeaderInput
+              label="Employee Name"
+              value="-- Select Employee --"
+              isSelect={true}
+              options={employeeOptions}
+              isLoading={isLoadingData}
+            />
+            <HeaderInput label="Job Title" value="Production Manager" />
+            <HeaderInput
+              label="Department"
+              value="-- Select Dept --"
+              isSelect={true}
+              options={departmentOptions}
+              isLoading={isLoadingData}
+            />
+          </div>
+          <div>
+            <HeaderInput label="Last Update" value="2024-01-31" type="date" />
+          </div>
+          <div>
+            <HeaderInput label="Dept. Manager" value="Moehammad Faizal" />
+            <HeaderInput label="Reviewed by" value="HR Manager" />
+            <HeaderInput label="Approved by" value="Plant Director" />
+          </div>
+        </div>
       </div>
 
-      <div className="p-4 md:p-6 overflow-y-auto flex-1 custom-scrollbar bg-slate-50">
-        {/* 🔥 HEADER INFO (KEMBALI LENGKAP SEPERTI VIDEO, TAPI GAYA PPTX) */}
-        <div className="border border-[#e2e8f0] rounded-xl p-5 bg-white shadow-sm mb-6 relative overflow-hidden">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-2 relative z-10">
-            {/* Kolom 1 */}
-            <div className="flex flex-col">
-              <HeaderInput
-                label="Employee Name"
-                value="Angga Praditya"
-                isSelect={true}
-              />
-              <HeaderInput label="Job Title" value="Production Manager" />
-              <HeaderInput label="Department" value="Production" />
-            </div>
-            {/* Kolom 2 */}
-            <div className="flex flex-col">
-              <HeaderInput label="Doc. ID" value="DOC-2024-001" />
-              <HeaderInput label="Revision" value="02" />
-              <HeaderInput label="Date" value="2024-01-31" type="date" />
-            </div>
-            {/* Kolom 3 */}
-            <div className="flex flex-col">
-              <HeaderInput label="Dept. Manager" value="Moehammad Faizal" />
-              <HeaderInput label="Reviewed by" value="HR Manager" />
-              <HeaderInput label="Approved by" value="Plant Director" />
-            </div>
+      {/* ========================================== */}
+      {/* UNIFIED MATRIX TABLE SECTION (MODERN WRAPPER + GRID TABLE) */}
+      {/* ========================================== */}
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-md p-4 md:p-5 flex flex-col mb-6 shrink-0">
+        <div className="flex items-center gap-2 mb-4 border-b border-slate-100 pb-3 shrink-0">
+          <h2 className="text-sm font-black text-slate-800 uppercase tracking-widest">
+            Competency Development Plan
+          </h2>
+          <div className="flex gap-1.5 ml-2 hidden sm:flex">
+            <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
+            <div className="w-1.5 h-1.5 rounded-full bg-green-500"></div>
+            <div className="w-1.5 h-1.5 rounded-full bg-red-500"></div>
           </div>
         </div>
 
-        {/* UNIFIED MATRIX TABLE SECTION (DARI PPTX) */}
-        <div className="bg-white border border-[#cbd5e1] rounded-lg overflow-x-auto shadow-sm mb-6">
-          <table className="w-full text-[10px] md:text-[11px] text-center border-collapse">
-            <thead className="bg-[#5c6bc0] text-white">
+        <div className="flex-1 overflow-x-auto rounded-xl border border-slate-300 custom-scrollbar">
+          {/* 🔥 BORDER-COLLAPSE DIPERTAHANKAN AGAR GRID MATRIX TIDAK RUSAK */}
+          <table className="w-full min-w-[1000px] text-[10px] md:text-[11px] text-center border-collapse">
+            <thead className="bg-[#5c6bc0] text-white sticky top-0 z-10">
               <tr>
                 <th
-                  className="p-2 border border-indigo-400 font-bold"
+                  className="p-2 border border-indigo-400 font-bold uppercase tracking-wider align-middle"
                   rowSpan={2}
                 >
                   Competency
                 </th>
                 <th
-                  className="p-2 border border-indigo-400 font-bold"
+                  className="p-2 border border-indigo-400 font-bold uppercase tracking-wider"
                   colSpan={2}
                 >
                   Competency Level
                 </th>
                 <th
-                  className="p-2 border border-indigo-400 font-bold"
+                  className="p-2 border border-indigo-400 font-bold uppercase tracking-wider align-middle"
                   rowSpan={2}
                 >
                   Gap Score
                 </th>
                 <th
-                  className="p-2 border border-indigo-400 font-bold"
+                  className="p-2 border border-indigo-400 font-bold uppercase tracking-wider"
                   colSpan={3}
                 >
                   Development Plan
                 </th>
                 <th
-                  className="p-2 border border-indigo-400 font-bold"
+                  className="p-2 border border-indigo-400 font-bold uppercase tracking-wider"
                   colSpan={3}
                 >
                   Development Plan Evaluation
                 </th>
               </tr>
               <tr>
-                <th className="p-2 border border-indigo-400 font-medium">
+                <th className="p-2 border border-indigo-400 font-medium uppercase tracking-wider">
                   Target
                 </th>
-                <th className="p-2 border border-indigo-400 font-medium">
+                <th className="p-2 border border-indigo-400 font-medium uppercase tracking-wider">
                   Actual
                 </th>
-                <th className="p-2 border border-indigo-400 font-medium w-24">
+                <th className="p-2 border border-indigo-400 font-medium uppercase tracking-wider w-24">
                   Type
                 </th>
-                <th className="p-2 border border-indigo-400 font-medium">
+                <th className="p-2 border border-indigo-400 font-medium uppercase tracking-wider">
                   Details
                 </th>
-                <th className="p-2 border border-indigo-400 font-medium w-20">
+                <th className="p-2 border border-indigo-400 font-medium uppercase tracking-wider w-20">
                   Timeline
                 </th>
-                <th className="p-2 border border-indigo-400 font-medium w-16">
-                  Curent Level
+                <th className="p-2 border border-indigo-400 font-medium uppercase tracking-wider w-16">
+                  Current Level
                 </th>
-                <th className="p-2 border border-indigo-400 font-medium w-20">
-                  Eval. Date
+                <th className="p-2 border border-indigo-400 font-medium uppercase tracking-wider w-20">
+                  Evaluation Date
                 </th>
-                <th className="p-2 border border-indigo-400 font-medium">
+                <th className="p-2 border border-indigo-400 font-medium uppercase tracking-wider">
                   Remark
                 </th>
               </tr>
             </thead>
-            <tbody className="text-slate-700">
+            <tbody className="bg-white text-slate-700">
               {/* CORE COMPETENCY */}
               <tr className="bg-slate-100">
                 <td
                   colSpan={10}
-                  className="p-2 font-bold text-left text-[#5c6bc0] border border-slate-200"
+                  className="p-2.5 font-black text-slate-800 uppercase tracking-widest text-left border border-slate-300"
                 >
                   Core Competency
                 </td>
@@ -339,35 +458,41 @@ export default function MatrixCompetency({ userRole }) {
                     key={item.id}
                     className="hover:bg-blue-50/50 transition-colors"
                   >
-                    <td className="p-2 text-left border border-slate-200 font-medium">
+                    <td className="p-2 text-left font-bold text-slate-700 border border-slate-300">
                       {item.name}
                     </td>
-                    <td className="p-1 border border-slate-200">
+                    <td className="p-1 border border-slate-300">
                       <input
                         type="number"
                         defaultValue={item.target}
                         disabled={isReadOnly}
-                        className="w-10 text-center border border-slate-200 rounded bg-white disabled:bg-transparent"
+                        className={`${tableInputClass} text-center font-bold text-slate-900 mx-auto max-w-[50px]`}
                       />
                     </td>
-                    <td className="p-1 border border-slate-200">
+                    <td className="p-1 border border-slate-300">
                       <input
                         type="number"
                         defaultValue={item.actual}
                         disabled={isReadOnly}
-                        className="w-10 text-center border border-slate-200 rounded bg-white disabled:bg-transparent"
+                        className={`${tableInputClass} text-center font-bold text-blue-700 mx-auto max-w-[50px]`}
                       />
                     </td>
-                    <td
-                      className={`p-2 border border-slate-200 font-bold ${gap > 0 ? "text-red-600" : "text-slate-500"}`}
-                    >
-                      {gap}
+                    <td className="p-2 border border-slate-300 text-center">
+                      {gap > 0 ? (
+                        <span className="inline-block bg-red-100 text-red-600 font-black px-2 py-0.5 rounded">
+                          {gap}
+                        </span>
+                      ) : (
+                        <span className="inline-block text-slate-400 font-bold px-2 py-0.5">
+                          -
+                        </span>
+                      )}
                     </td>
-                    <td className="p-1 border border-slate-200">
+                    <td className="p-1 border border-slate-300">
                       <select
                         defaultValue={item.type}
                         disabled={isReadOnly}
-                        className="w-full p-1 text-[10px] border border-slate-200 rounded disabled:bg-transparent outline-none"
+                        className={`${tableInputClass} font-medium`}
                       >
                         <option value=""></option>
                         <option value="Training">Training</option>
@@ -375,44 +500,47 @@ export default function MatrixCompetency({ userRole }) {
                         <option value="Project Assgn">Project Assgn</option>
                       </select>
                     </td>
-                    <td className="p-1 border border-slate-200">
+                    <td className="p-1 border border-slate-300">
                       <input
                         type="text"
                         defaultValue={item.details}
                         disabled={isReadOnly}
-                        className="w-full p-1 border border-slate-200 rounded disabled:bg-transparent outline-none"
+                        className={tableInputClass}
+                        placeholder={!isReadOnly ? "Enter details..." : ""}
                       />
                     </td>
-                    <td className="p-1 border border-slate-200">
+                    <td className="p-1 border border-slate-300">
                       <input
                         type="text"
                         defaultValue={item.timeline}
                         disabled={isReadOnly}
-                        className="w-full p-1 border border-slate-200 rounded disabled:bg-transparent outline-none text-center"
+                        className={`${tableInputClass} text-center`}
+                        placeholder={!isReadOnly ? "Timeline" : ""}
                       />
                     </td>
-                    <td className="p-1 border border-slate-200">
+                    <td className="p-1 border border-slate-300">
                       <input
                         type="text"
                         defaultValue={item.curLevel}
                         disabled={isReadOnly}
-                        className="w-full p-1 border border-slate-200 rounded disabled:bg-transparent outline-none text-center"
+                        className={`${tableInputClass} text-center font-bold text-slate-700`}
                       />
                     </td>
-                    <td className="p-1 border border-slate-200">
+                    <td className="p-1 border border-slate-300">
                       <input
                         type="date"
                         defaultValue={item.evalDate}
                         disabled={isReadOnly}
-                        className="w-full p-1 border border-slate-200 rounded disabled:bg-transparent outline-none text-[9px]"
+                        className={`${tableInputClass} text-[9px]`}
                       />
                     </td>
-                    <td className="p-1 border border-slate-200">
+                    <td className="p-1 border border-slate-300">
                       <input
                         type="text"
                         defaultValue={item.remark}
                         disabled={isReadOnly}
-                        className="w-full p-1 border border-slate-200 rounded disabled:bg-transparent outline-none"
+                        className={tableInputClass}
+                        placeholder={!isReadOnly ? "Remarks..." : ""}
                       />
                     </td>
                   </tr>
@@ -423,7 +551,7 @@ export default function MatrixCompetency({ userRole }) {
               <tr className="bg-slate-100">
                 <td
                   colSpan={10}
-                  className="p-2 font-bold text-left text-[#5c6bc0] border border-slate-200"
+                  className="p-2.5 font-black text-slate-800 uppercase tracking-widest text-left border border-slate-300"
                 >
                   Functional Competency
                 </td>
@@ -433,37 +561,77 @@ export default function MatrixCompetency({ userRole }) {
                 return (
                   <tr
                     key={item.id}
-                    className="hover:bg-blue-50/50 transition-colors"
+                    className="hover:bg-blue-50/50 transition-colors group relative"
                   >
-                    <td className="p-2 text-left border border-slate-200 font-medium">
-                      {item.name}
+                    <td className="p-1 border border-slate-300 text-left">
+                      <div className="flex items-center gap-1">
+                        <select
+                          defaultValue={item.name}
+                          disabled={isReadOnly}
+                          className={`${tableInputClass} font-bold text-slate-700 text-left`}
+                        >
+                          <option value={item.name}>
+                            {item.name || "-- Select Competency --"}
+                          </option>
+                          <option value="Analysis and Reasoning">
+                            Analysis and Reasoning
+                          </option>
+                          <option value="Decision Making">
+                            Decision Making
+                          </option>
+                          <option value="Attention to Detail">
+                            Attention to Detail
+                          </option>
+                          <option value="Managing Projects">
+                            Managing Projects
+                          </option>
+                          <option value="Technical Knowledge">
+                            Technical Knowledge
+                          </option>
+                        </select>
+                        {!isReadOnly && (
+                          <button
+                            onClick={() => removeFuncCompetency(item.id)}
+                            className="w-5 h-5 rounded bg-red-50 text-red-500 hover:bg-red-500 hover:text-white flex items-center justify-center font-bold transition-all shrink-0 opacity-0 group-hover:opacity-100"
+                            title="Remove row"
+                          >
+                            ✕
+                          </button>
+                        )}
+                      </div>
                     </td>
-                    <td className="p-1 border border-slate-200">
+                    <td className="p-1 border border-slate-300">
                       <input
                         type="number"
                         defaultValue={item.target}
                         disabled={isReadOnly}
-                        className="w-10 text-center border border-slate-200 rounded bg-white disabled:bg-transparent"
+                        className={`${tableInputClass} text-center font-bold text-slate-900 mx-auto max-w-[50px]`}
                       />
                     </td>
-                    <td className="p-1 border border-slate-200">
+                    <td className="p-1 border border-slate-300">
                       <input
                         type="number"
                         defaultValue={item.actual}
                         disabled={isReadOnly}
-                        className="w-10 text-center border border-slate-200 rounded bg-white disabled:bg-transparent"
+                        className={`${tableInputClass} text-center font-bold text-blue-700 mx-auto max-w-[50px]`}
                       />
                     </td>
-                    <td
-                      className={`p-2 border border-slate-200 font-bold ${gap > 0 ? "text-red-600" : "text-slate-500"}`}
-                    >
-                      {gap}
+                    <td className="p-2 border border-slate-300 text-center">
+                      {gap > 0 ? (
+                        <span className="inline-block bg-red-100 text-red-600 font-black px-2 py-0.5 rounded">
+                          {gap}
+                        </span>
+                      ) : (
+                        <span className="inline-block text-slate-400 font-bold px-2 py-0.5">
+                          -
+                        </span>
+                      )}
                     </td>
-                    <td className="p-1 border border-slate-200">
+                    <td className="p-1 border border-slate-300">
                       <select
                         defaultValue={item.type}
                         disabled={isReadOnly}
-                        className="w-full p-1 text-[10px] border border-slate-200 rounded disabled:bg-transparent outline-none"
+                        className={`${tableInputClass} font-medium`}
                       >
                         <option value=""></option>
                         <option value="Training">Training</option>
@@ -471,267 +639,202 @@ export default function MatrixCompetency({ userRole }) {
                         <option value="Project Assgn">Project Assgn</option>
                       </select>
                     </td>
-                    <td className="p-1 border border-slate-200">
+                    <td className="p-1 border border-slate-300">
                       <input
                         type="text"
                         defaultValue={item.details}
                         disabled={isReadOnly}
-                        className="w-full p-1 border border-slate-200 rounded disabled:bg-transparent outline-none"
+                        className={tableInputClass}
+                        placeholder={!isReadOnly ? "Enter details..." : ""}
                       />
                     </td>
-                    <td className="p-1 border border-slate-200">
+                    <td className="p-1 border border-slate-300">
                       <input
                         type="text"
                         defaultValue={item.timeline}
                         disabled={isReadOnly}
-                        className="w-full p-1 border border-slate-200 rounded disabled:bg-transparent outline-none text-center"
+                        className={`${tableInputClass} text-center`}
+                        placeholder={!isReadOnly ? "Timeline" : ""}
                       />
                     </td>
-                    <td className="p-1 border border-slate-200">
+                    <td className="p-1 border border-slate-300">
                       <input
                         type="text"
                         defaultValue={item.curLevel}
                         disabled={isReadOnly}
-                        className="w-full p-1 border border-slate-200 rounded disabled:bg-transparent outline-none text-center"
+                        className={`${tableInputClass} text-center font-bold text-slate-700`}
                       />
                     </td>
-                    <td className="p-1 border border-slate-200">
+                    <td className="p-1 border border-slate-300">
                       <input
                         type="date"
                         defaultValue={item.evalDate}
                         disabled={isReadOnly}
-                        className="w-full p-1 border border-slate-200 rounded disabled:bg-transparent outline-none text-[9px]"
+                        className={`${tableInputClass} text-[9px]`}
                       />
                     </td>
-                    <td className="p-1 border border-slate-200">
+                    <td className="p-1 border border-slate-300">
                       <input
                         type="text"
                         defaultValue={item.remark}
                         disabled={isReadOnly}
-                        className="w-full p-1 border border-slate-200 rounded disabled:bg-transparent outline-none"
+                        className={tableInputClass}
+                        placeholder={!isReadOnly ? "Remarks..." : ""}
                       />
                     </td>
                   </tr>
                 );
               })}
+
+              {/* TOMBOL ADD NEW FUNCTIONAL COMPETENCY */}
+              {!isReadOnly && (
+                <tr className="bg-slate-50">
+                  <td
+                    colSpan={10}
+                    className="p-2 border border-slate-300 text-left"
+                  >
+                    <button
+                      onClick={addFuncCompetency}
+                      className="bg-emerald-100 text-emerald-700 hover:bg-emerald-500 hover:text-white text-[10px] font-bold py-1.5 px-3 rounded transition flex items-center gap-1.5 uppercase tracking-wider shadow-sm"
+                    >
+                      <span className="text-sm leading-none mt-[-1px]">+</span>{" "}
+                      Add Competency Row
+                    </button>
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
+      </div>
 
-        {/* 🔥 BOTTOM SECTION (DIKEMBALIKAN SEPERTI DI VIDEO) */}
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
-          {/* TABEL KPI */}
-          <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-            <h3 className="bg-[#1e3a8a] text-white text-[10px] md:text-[11px] font-bold p-2.5 uppercase tracking-widest text-center">
-              Key Performance Indicator (KPI)
-            </h3>
-            <table className="w-full text-[9px] md:text-[10px] text-center">
-              <thead className="bg-slate-100 text-slate-600 border-b border-slate-200">
-                <tr>
-                  <th className="p-2 border-r border-slate-200">KPI Name</th>
-                  <th className="p-2 border-r border-slate-200 w-16">Target</th>
-                  <th className="p-2 border-r border-slate-200">
-                    Pre Dev Plan
-                  </th>
-                  <th className="p-2 border-r border-slate-200">
-                    Post Dev Plan
-                  </th>
-                  <th className="p-2 w-12">Action</th>
-                </tr>
-              </thead>
-              <tbody className="text-slate-700">
-                <tr className="border-b border-slate-100">
-                  <td className="p-2 border-r border-slate-200">
-                    <input
-                      type="text"
-                      placeholder="Productivity %"
-                      disabled={isReadOnly}
-                      className="w-full p-1.5 border border-slate-200 rounded disabled:bg-transparent"
-                    />
-                  </td>
-                  <td className="p-2 border-r border-slate-200">
-                    <input
-                      type="text"
-                      placeholder="90%"
-                      disabled={isReadOnly}
-                      className="w-full p-1.5 border border-slate-200 rounded text-center disabled:bg-transparent"
-                    />
-                  </td>
-                  <td className="p-2 border-r border-slate-200">
-                    <input
-                      type="text"
-                      placeholder="Pre"
-                      disabled={isReadOnly}
-                      className="w-full p-1.5 border border-slate-200 rounded disabled:bg-transparent"
-                    />
-                  </td>
-                  <td className="p-2 border-r border-slate-200">
-                    <input
-                      type="text"
-                      placeholder="Post"
-                      disabled={isReadOnly}
-                      className="w-full p-1.5 border border-slate-200 rounded disabled:bg-transparent"
-                    />
-                  </td>
-                  <td className="p-2">
-                    <button
-                      disabled={isReadOnly}
-                      className="w-6 h-6 bg-[#22c55e] hover:bg-green-600 text-white rounded font-bold disabled:opacity-50 transition"
-                    >
-                      +
-                    </button>
-                  </td>
-                </tr>
-                <tr>
-                  <td className="p-2 border-r border-slate-200">
-                    <input
-                      type="text"
-                      placeholder="Defect Rate"
-                      disabled={isReadOnly}
-                      className="w-full p-1.5 border border-slate-200 rounded disabled:bg-transparent"
-                    />
-                  </td>
-                  <td className="p-2 border-r border-slate-200">
-                    <input
-                      type="text"
-                      placeholder="< 2%"
-                      disabled={isReadOnly}
-                      className="w-full p-1.5 border border-slate-200 rounded text-center disabled:bg-transparent"
-                    />
-                  </td>
-                  <td className="p-2 border-r border-slate-200">
-                    <input
-                      type="text"
-                      placeholder="Pre"
-                      disabled={isReadOnly}
-                      className="w-full p-1.5 border border-slate-200 rounded disabled:bg-transparent"
-                    />
-                  </td>
-                  <td className="p-2 border-r border-slate-200">
-                    <input
-                      type="text"
-                      placeholder="Post"
-                      disabled={isReadOnly}
-                      className="w-full p-1.5 border border-slate-200 rounded disabled:bg-transparent"
-                    />
-                  </td>
-                  <td className="p-2">
-                    <button
-                      disabled={isReadOnly}
-                      className="w-6 h-6 bg-[#ef4444] hover:bg-red-600 text-white rounded font-bold disabled:opacity-50 transition"
-                    >
-                      -
-                    </button>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+      {/* ========================================== */}
+      {/* SCORING SYSTEM TABLE (MODERN WRAPPER + GRID TABLE) */}
+      {/* ========================================== */}
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-md p-4 md:p-5 flex flex-col mb-6 shrink-0 max-w-5xl mx-auto w-full">
+        <div className="flex items-center gap-2 mb-4 border-b border-slate-100 pb-3 shrink-0">
+          <h2 className="text-sm font-black text-slate-800 uppercase tracking-widest">
+            Scoring System Reference
+          </h2>
+          <div className="flex gap-1.5 ml-2 hidden sm:flex">
+            <div className="w-1.5 h-1.5 rounded-full bg-[#0f766e]"></div>
+            <div className="w-1.5 h-1.5 rounded-full bg-[#14b8a6]"></div>
           </div>
+        </div>
 
-          {/* TABEL REFERENCE DESCRIPTION */}
-          <div className="bg-white border border-slate-200 rounded-xl overflow-x-auto shadow-sm">
-            <h3 className="bg-[#1e3a8a] text-white text-[10px] md:text-[11px] font-bold p-2.5 uppercase tracking-widest text-center">
-              Competency Description & Job Level
-            </h3>
-            <table className="w-full text-[9px] text-left">
-              <thead className="bg-slate-100 text-slate-600 border-b border-slate-200 text-center">
-                <tr>
-                  <th className="p-2 border-r border-slate-200" colSpan={2}>
-                    Core Competency Description
-                  </th>
-                  <th className="p-2" colSpan={4}>
-                    Standard based on Job Level
-                  </th>
-                </tr>
-                <tr className="border-t border-slate-200 text-[8px] bg-slate-50">
-                  <th className="p-2 border-r border-slate-200 w-[20%]">
-                    Name
-                  </th>
-                  <th className="p-2 border-r border-slate-200 w-[40%]">
-                    Description
-                  </th>
-                  <th className="p-2 border-r border-slate-200">Manager+</th>
-                  <th className="p-2 border-r border-slate-200">Spv</th>
-                  <th className="p-2 border-r border-slate-200">Foreman</th>
-                  <th className="p-2">Staff</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 text-slate-700">
-                <tr>
-                  <td className="p-2 border-r border-slate-200 font-bold text-center">
-                    Integrity
-                  </td>
-                  <td className="p-2 border-r border-slate-200 text-slate-600 leading-tight">
-                    The practice of being honest and showing a consistent and
-                    uncompromising adherence to strong moral and ethical
-                    principles.
-                  </td>
-                  <td className="p-2 border-r border-slate-200 text-center font-bold text-[#5c6bc0]">
-                    5
-                  </td>
-                  <td className="p-2 border-r border-slate-200 text-center font-bold text-[#5c6bc0]">
-                    5
-                  </td>
-                  <td className="p-2 border-r border-slate-200 text-center font-bold text-[#5c6bc0]">
-                    5
-                  </td>
-                  <td className="p-2 text-center font-bold text-[#5c6bc0]">
-                    5
-                  </td>
-                </tr>
-                <tr>
-                  <td className="p-2 border-r border-slate-200 font-bold text-center">
-                    Result & Focus Initiative
-                  </td>
-                  <td className="p-2 border-r border-slate-200 text-slate-600 leading-tight">
-                    Focuses on results and desired outcomes and how best to
-                    achieve them. Gets the job done.
-                  </td>
-                  <td className="p-2 border-r border-slate-200 text-center font-bold text-[#5c6bc0]">
-                    5
-                  </td>
-                  <td className="p-2 border-r border-slate-200 text-center font-bold text-[#5c6bc0]">
-                    5
-                  </td>
-                  <td className="p-2 border-r border-slate-200 text-center font-bold text-[#5c6bc0]">
-                    5
-                  </td>
-                  <td className="p-2 text-center font-bold text-[#5c6bc0]">
-                    5
-                  </td>
-                </tr>
-                <tr>
-                  <td className="p-2 border-r border-slate-200 font-bold text-center">
-                    Problem Solving
-                  </td>
-                  <td className="p-2 border-r border-slate-200 text-slate-600 leading-tight">
-                    Resolves difficult or complicated challenges efficiently.
-                  </td>
-                  <td className="p-2 border-r border-slate-200 text-center font-bold text-[#5c6bc0]">
-                    5
-                  </td>
-                  <td className="p-2 border-r border-slate-200 text-center font-bold text-[#5c6bc0]">
-                    4
-                  </td>
-                  <td className="p-2 border-r border-slate-200 text-center font-bold text-[#5c6bc0]">
-                    4
-                  </td>
-                  <td className="p-2 text-center font-bold text-[#5c6bc0]">
-                    3
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+        <div className="flex-1 overflow-x-auto rounded-xl border border-[#0d9488] custom-scrollbar">
+          {/* 🔥 BORDER-COLLAPSE DIPERTAHANKAN */}
+          <table className="w-full text-[10px] md:text-[11px] text-left border-collapse">
+            <thead className="bg-[#0f766e] text-white sticky top-0 z-10 shadow-sm">
+              <tr>
+                <th className="p-3 text-center font-bold uppercase tracking-wider border border-[#0d9488] w-16">
+                  Score
+                </th>
+                <th className="p-3 text-left font-bold uppercase tracking-wider border border-[#0d9488] w-48">
+                  Level
+                </th>
+                <th className="p-3 text-left font-bold uppercase tracking-wider border border-[#0d9488]">
+                  Description
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white text-slate-700">
+              <tr className="hover:bg-slate-50 transition">
+                <td className="p-3 text-center font-black text-slate-800 text-lg border border-slate-300">
+                  1
+                </td>
+                <td className="p-3 font-bold border border-slate-300">
+                  Basic Knowledge
+                </td>
+                <td className="p-3 font-medium border border-slate-300">
+                  <ul className="list-disc pl-4 space-y-1">
+                    <li>
+                      Have common knowledge or understanding of basic techniques
+                      and concepts.
+                    </li>
+                    <li>Focus on Learning.</li>
+                  </ul>
+                </td>
+              </tr>
+              <tr className="hover:bg-slate-50 transition">
+                <td className="p-3 text-center font-black text-slate-800 text-lg border border-slate-300">
+                  2
+                </td>
+                <td className="p-3 font-bold border border-slate-300">
+                  Novice (limited experience)
+                </td>
+                <td className="p-3 font-medium border border-slate-300">
+                  <ul className="list-disc pl-4 space-y-1">
+                    <li>
+                      Have the level of experience gained in a classroom
+                      (theoretical experience).
+                    </li>
+                    <li>Needs help when performing the skill/competency.</li>
+                    <li>Focus on developing through on the job experience.</li>
+                  </ul>
+                </td>
+              </tr>
+              <tr className="hover:bg-slate-50 transition">
+                <td className="p-3 text-center font-black text-slate-800 text-lg border border-slate-300">
+                  3
+                </td>
+                <td className="p-3 font-bold border border-slate-300">
+                  Intermediate (practical application)
+                </td>
+                <td className="p-3 font-medium border border-slate-300">
+                  <ul className="list-disc pl-4 space-y-1">
+                    <li>Able to complete tasks as requested.</li>
+                    <li>Less Supervisions/guidance to perform successfully.</li>
+                  </ul>
+                </td>
+              </tr>
+              <tr className="hover:bg-slate-50 transition">
+                <td className="p-3 text-center font-black text-slate-800 text-lg border border-slate-300">
+                  4
+                </td>
+                <td className="p-3 font-bold border border-slate-300">
+                  Advanced (applied theory)
+                </td>
+                <td className="p-3 font-medium border border-slate-300">
+                  <ul className="list-disc pl-4 space-y-1">
+                    <li>Capable and experienced.</li>
+                    <li>Able to perform without assistance (independently).</li>
+                    <li>
+                      Can provide practical/relevant ideas which easily be
+                      implemented.
+                    </li>
+                  </ul>
+                </td>
+              </tr>
+              <tr className="hover:bg-emerald-50/50 bg-emerald-50/20 transition">
+                <td className="p-3 text-center font-black text-emerald-600 text-lg border border-slate-300">
+                  5
+                </td>
+                <td className="p-3 font-bold text-emerald-700 border border-slate-300">
+                  Expert (recognized authority)
+                </td>
+                <td className="p-3 font-medium text-emerald-800 border border-slate-300">
+                  <ul className="list-disc pl-4 space-y-1">
+                    <li>Fully capable and experienced.</li>
+                    <li>
+                      Known as an expert; Sought for help by other in this area
+                      competency.
+                    </li>
+                    <li>Demonstrated ability to lead and train others.</li>
+                  </ul>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
 
-      {/* FOOTER BUTTONS */}
-      <div className="bg-slate-50 p-4 border-t border-slate-200 flex flex-wrap gap-3 justify-center md:justify-start shrink-0 relative items-center">
+      {/* BOTTOM ACTION BAR */}
+      <div className="mt-2 mb-8 flex flex-wrap gap-3 justify-center md:justify-start shrink-0 relative z-10 w-full px-1">
         <button
           onClick={handleSave}
           disabled={isReadOnly || isSaving}
-          className="bg-blue-600 hover:bg-blue-700 text-white text-[10px] md:text-xs font-bold py-2.5 px-6 rounded-lg shadow-md shadow-blue-500/30 transition-all active:scale-95 disabled:opacity-50 disabled:scale-100 disabled:shadow-none flex items-center gap-2"
+          className="bg-blue-600 hover:bg-blue-700 text-white text-[11px] md:text-xs font-black uppercase tracking-widest py-3.5 px-8 rounded-xl shadow-lg shadow-blue-500/30 transition-all active:scale-95 disabled:opacity-50 disabled:scale-100 disabled:shadow-none flex items-center gap-2 border border-blue-500"
         >
           {isSaving ? (
             <>
@@ -754,7 +857,7 @@ export default function MatrixCompetency({ userRole }) {
                   d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                 ></path>
               </svg>
-              Saving Data...
+              Saving...
             </>
           ) : (
             <>
@@ -775,11 +878,8 @@ export default function MatrixCompetency({ userRole }) {
             </>
           )}
         </button>
-        <button className="bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 text-[10px] md:text-xs font-bold py-2.5 px-4 rounded-lg shadow-sm transition active:scale-95">
-          Display Calendar
-        </button>
-        <button className="bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 text-[10px] md:text-xs font-bold py-2.5 px-4 rounded-lg shadow-sm transition active:scale-95">
-          Competency List
+        <button className="bg-white border-2 border-slate-200 hover:bg-slate-50 text-slate-700 text-[11px] md:text-xs font-bold uppercase tracking-wider py-3.5 px-6 rounded-xl shadow-sm transition active:scale-95">
+          Print Document
         </button>
       </div>
     </div>

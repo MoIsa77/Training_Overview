@@ -386,8 +386,12 @@ export default function Home() {
     }
   };
 
+  // 🔥 UPDATE: handleLogout sekarang mendeteksi jika sedang buka matrix-competency
   const handleLogout = () => {
     setUserRole("viewer");
+    if (activePage === "matrix-competency") {
+      scrollToSection("mandays"); // Otomatis scroll ke atas karena matrix-competency disembunyikan
+    }
   };
 
   return (
@@ -600,15 +604,18 @@ export default function Home() {
         </div>
       </section>
 
-      <section
-        id="matrix-competency"
-        className="bg-[#f1f5f9] pt-[80px] md:pt-[90px] pb-4 px-3 md:px-5 overflow-hidden z-20 relative"
-        style={{ height: "100dvh" }}
-      >
-        <div className="h-full w-full">
-          <MatrixCompetency userRole={userRole} />
-        </div>
-      </section>
+      {/* 🔥 CONDITIONAL RENDERING: MATRIX COMPETENCY HANYA MUNCUL JIKA USER ADALAH ADMIN 🔥 */}
+      {userRole === "admin" && (
+        <section
+          id="matrix-competency"
+          className="bg-[#f1f5f9] pt-[80px] md:pt-[90px] pb-4 px-3 md:px-5 overflow-hidden z-20 relative"
+          style={{ height: "100dvh" }}
+        >
+          <div className="h-full w-full">
+            <MatrixCompetency userRole={userRole} />
+          </div>
+        </section>
+      )}
 
       {/* ========================================== */}
       {/* 🔥 MODAL LOGIN ADMIN DENGAN VERIFIKASI SHEET */}

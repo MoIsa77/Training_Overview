@@ -29,6 +29,7 @@ export default function Sidebar({
       activeClass:
         "bg-slate-200 text-slate-800 font-bold border-l-4 border-slate-500",
       hoverClass: "hover:bg-slate-100 hover:text-slate-700",
+      isLocked: false,
     },
     {
       id: "mandays",
@@ -37,6 +38,7 @@ export default function Sidebar({
       activeClass:
         "bg-[#000ebf]/10 text-[#000ebf] font-bold border-l-4 border-[#000ebf]",
       hoverClass: "hover:bg-blue-50 hover:text-[#000ebf]",
+      isLocked: false,
     },
     {
       id: "training-plan",
@@ -45,8 +47,8 @@ export default function Sidebar({
       activeClass:
         "bg-[#65a30d]/15 text-[#4d7c0f] font-bold border-l-4 border-[#65a30d]",
       hoverClass: "hover:bg-[#65a30d]/10 hover:text-[#4d7c0f]",
+      isLocked: false,
     },
-    // 🔥 POSISI & WARNA DITUKAR: Training Calendar sekarang warna Merah
     {
       id: "training-calendar",
       label: "Training Calendar",
@@ -54,8 +56,8 @@ export default function Sidebar({
       activeClass:
         "bg-red-100 text-[#dc2626] font-bold border-l-4 border-[#dc2626]",
       hoverClass: "hover:bg-red-50 hover:text-[#dc2626]",
+      isLocked: false,
     },
-    // 🔥 POSISI & WARNA DITUKAR: Matrix Competency sekarang warna Biru
     {
       id: "matrix-competency",
       label: "Matrix Competency",
@@ -63,14 +65,19 @@ export default function Sidebar({
       activeClass:
         "bg-[#000ebf]/10 text-[#000ebf] font-bold border-l-4 border-[#000ebf]",
       hoverClass: "hover:bg-blue-50 hover:text-[#000ebf]",
+      // 🔥 Logic untuk mengunci menu jika role bukan admin
+      isLocked: userRole !== "admin",
     },
   ];
 
-  const handleNavClick = (id) => {
-    setActivePage(id);
+  const handleNavClick = (item) => {
+    // Jika item terkunci (isLocked = true), hentikan fungsi (jangan lakukan apa-apa)
+    if (item.isLocked) return;
+
+    setActivePage(item.id);
     setMobileOpen(false);
     setTimeout(() => {
-      const el = document.getElementById(id);
+      const el = document.getElementById(item.id);
       if (el) {
         el.scrollIntoView({ behavior: "smooth", block: "start" });
       }
@@ -115,22 +122,41 @@ export default function Sidebar({
         <div className="flex-1 overflow-y-auto py-4 px-3 flex flex-col gap-2 custom-scrollbar">
           {menuItems.map((item) => {
             const isActive = activePage === item.id;
+            const isLocked = item.isLocked;
+
             return (
               <button
                 key={item.id}
-                onClick={() => handleNavClick(item.id)}
-                className={`flex items-center gap-4 w-full p-3.5 rounded-lg transition-all duration-300 text-sm overflow-hidden relative ${
-                  isActive
-                    ? item.activeClass
-                    : `text-slate-500 border-l-4 border-transparent ${item.hoverClass}`
+                onClick={() => handleNavClick(item)}
+                // 🔥 Menerapkan gaya khusus jika item tersebut terkunci (isLocked)
+                className={`flex items-center justify-between w-full p-3.5 rounded-lg transition-all duration-300 text-sm overflow-hidden relative border-l-4 ${
+                  isLocked
+                    ? "text-slate-300 bg-slate-50 border-transparent cursor-not-allowed"
+                    : isActive
+                      ? item.activeClass
+                      : `text-slate-500 border-transparent ${item.hoverClass}`
                 }`}
+                title={isLocked ? "Admin Access Required" : ""}
               >
-                <div
-                  className={`${isActive ? "scale-110" : "scale-100"} transition-transform duration-300`}
-                >
-                  {item.icon}
+                <div className="flex items-center gap-4">
+                  <div
+                    className={`${
+                      isActive ? "scale-110" : "scale-100"
+                    } transition-transform duration-300`}
+                  >
+                    {item.icon}
+                  </div>
+                  <span className="tracking-wide">{item.label}</span>
                 </div>
-                <span className="tracking-wide">{item.label}</span>
+
+                {/* 🔥 Menampilkan ikon gembok kecil di kanan jika terkunci */}
+                {isLocked && (
+                  <Lock
+                    size={14}
+                    strokeWidth={2.5}
+                    className="text-slate-300"
+                  />
+                )}
               </button>
             );
           })}
