@@ -224,8 +224,14 @@ export default function MandaysSummary({
           const formattedMonth = summary.map((row) => ({
             month: row["Month"],
             gaugeTarget: parseFloat(row["Target Mandays"]) || 0,
-            tableTarget: parseFloat(row["Grand Total Ytd Mandays Target"]) || 0,
-            current: parseFloat(row["Current"]) || 0,
+            tableTarget:
+              parseFloat(
+                row["Grand Total Training Mandays/Employee (month)"],
+              ) || 0,
+            current:
+              parseFloat(
+                row["Grand Total Training Mandays/Employee (month)"],
+              ) || 0,
           }));
           setMonthlyData(formattedMonth);
         }
